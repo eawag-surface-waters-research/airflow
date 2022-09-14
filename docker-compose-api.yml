@@ -75,6 +75,8 @@ services:
             - scheduler
         volumes:
             - ./airflow/dags:/usr/local/airflow/dags
+            - ./scripts:/usr/local/airflow/scripts
+            - ../:/usr/local/data
         environment:
             - FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
             - EXECUTOR=Celery

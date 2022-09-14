@@ -1,6 +1,6 @@
-# Eawag Distributed Airflow Instance
+# Eawag SURF Distributed Airflow Instance
 
-This is a repository for Eawag's distributed airflow instance, initially developed for the ALPLAKES project.
+This is a repository for Eawag SURF distributed airflow instance, initially developed for the ALPLAKES project.
 
 DAGS can be found in the `airflow/dags` folder. 
 
