@@ -1,0 +1,22 @@
+version: '3.7'
+services:
+    worker-simulation:
+        image: worker-simulation:latest
+        build:
+          context: .
+        restart: always
+        depends_on:
+            - scheduler
+        volumes:
+            - ./airflow/dags:/usr/local/airflow/dags
+        environment:
+            - FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
+            - EXECUTOR=Celery
+            - PYTHONPATH=/usr/local/airflow
+        command: worker -q simulation
+        env_file:
+          - env.list
+
+
+
+
