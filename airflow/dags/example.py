@@ -19,6 +19,7 @@ dag = DAG(
     default_args=default_args,
     description='Example Dag',
     schedule_interval=None,
+    tags=['example'],
 )
 
 

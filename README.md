@@ -25,15 +25,7 @@ git clone https://github.com/eawag-surface-waters-research/airflow.git
 
 ### 3. Launch containers
 
-#### Add credentials
-
-Create `creds.json` using `creds-example.json` as a template and populate the values.
-```console 
-cp creds-example.json creds.json
-vim creds.json
-```
-
-#### Setting the Airflow user & admin password
+#### Set the Airflow user & admin password
 Replace **airflow** in the command below with desired admin password.
 ```console
 echo -e "AIRFLOW_UID=$(id -u)\nAIRFLOW_GID=0\n_AIRFLOW_WWW_USER_PASSWORD=airflow" > .env
@@ -50,6 +42,15 @@ docker-compose up airflow-init
 ```console 
 docker-compose -f docker-compose.yml up -d --build 
 ```
+
+### 5. Add credentials
+
+Create `creds.json` using `creds-example.json` as a template and populate the values.
+```console 
+cp creds-example.json creds.json
+vim creds.json
+```
+Then go to the user interface and upload the credentials.
 
 ## Docker Commands
 

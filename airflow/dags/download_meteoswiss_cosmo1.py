@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from airflow.operators.bash_operator import BashOperator
+from airflow.operators.bash import BashOperator
 from airflow.utils.dates import days_ago
 
 from airflow import DAG
@@ -18,11 +18,12 @@ dag = DAG(
     default_args=default_args,
     description='Download COSMO1 data from MeteoSwiss.',
     schedule_interval=None,
+    tags=['api'],
 )
 
 clone_repo = BashOperator(
     task_id='clone_repo',
-    bash_command="cd {{ params.folder }}; git clone {{ params.git }} || (cd {{ params.folder }} ; git pull)",
+    bash_command="cd {{ params.folder }}; git clone {{ params.git }} || (cd {{ params.repo }} ; git pull)",
     params={'folder': '/opt/airflow/data',
             'git': 'https://github.com/eawag-surface-waters-research/alplakes-externaldata.git',
             'repo': 'alplakes-externaldata'},
