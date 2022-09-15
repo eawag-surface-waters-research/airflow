@@ -23,7 +23,9 @@ sudo apt-get -y update && sudo apt-get -y install git
 git clone https://github.com/eawag-surface-waters-research/airflow.git
 ```
 
-### 3. Add credentials
+### 3. Launch containers
+
+#### Add credentials
 
 Create `creds.json` using `creds-example.json` as a template and populate the values.
 ```console 
@@ -31,27 +33,29 @@ cp creds-example.json creds.json
 vim creds.json
 ```
 
-### 4. Launch containers
-
-#### API Server
-```console 
-docker-compose -f docker-compose-api.yml up -d --build 
+#### Setting the Airflow user & admin password
+Replace **airflow** in the command below with desired admin password.
+```console
+echo -e "AIRFLOW_UID=$(id -u)\nAIRFLOW_GID=0\n_AIRFLOW_WWW_USER_PASSWORD=airflow" > .env
 ```
-#### Simulation Server
+Check content of .env contains the three aforementioned variables.
+```console
+cat .env
+```
+
+#### Launch database
 ```console 
-docker-compose -f docker-compose-simulation.yml up -d --build 
+docker-compose up airflow-init
+```
+```console 
+docker-compose -f docker-compose.yml up -d --build 
 ```
 
 ## Docker Commands
 
 ### Terminate containers
-#### API Server
 ```console 
-docker-compose -f docker-compose-api.yml down
-```
-#### Simulation Server
-```console 
-docker-compose -f docker-compose-simulation.yml down
+docker-compose -f docker-compose.yml down
 ```
 
 ### List active containers

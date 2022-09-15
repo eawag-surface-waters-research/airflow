@@ -1,3 +1,9 @@
 .idea
 airflow/dags/__pycache__
+airflow/logs/*
+!airflow/logs/.gitkeep
+airflow/plugins/*
+!airflow/plugins/.gitkeep
+.env
 creds.json
+docker-compose-default.yml

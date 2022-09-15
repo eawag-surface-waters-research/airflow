@@ -17,14 +17,15 @@ dag = DAG(
     'download_meteoswiss_cosmo1',
     default_args=default_args,
     description='Download COSMO1 data from MeteoSwiss.',
-    schedule_interval=False,
+    schedule_interval=None,
 )
 
 clone_repo = BashOperator(
     task_id='clone_repo',
-    bash_command="cd /usr/local/data; git clone {{ params.git }} || (cd {{ params.folder }} ; git pull)",
-    params={'git': 'https://github.com/eawag-surface-waters-research/alplakes-externaldata.git',
-            'folder': 'alplakes-externaldata'},
+    bash_command="cd {{ params.folder }}; git clone {{ params.git }} || (cd {{ params.folder }} ; git pull)",
+    params={'folder': '/opt/airflow/data',
+            'git': 'https://github.com/eawag-surface-waters-research/alplakes-externaldata.git',
+            'repo': 'alplakes-externaldata'},
     queue='api',
     dag=dag,
 )
@@ -32,9 +33,9 @@ clone_repo = BashOperator(
 download = BashOperator(
     task_id='download',
     bash_command="mkdir -p {{ params.data }}; cd {{ params.dir }}; python -m {{ params.script }} {{ params.data }} {{ var.value.cosmo_ftp_password }}",
-    params={'dir': '/usr/local/data/alplakes-externaldata',
+    params={'dir': '/opt/airflow/data/alplakes-externaldata',
             'script': 'externaldata.runs.meteoswiss_cosmo1',
-            'data': '/usr/local/data/rawdata'},
+            'data': '/opt/airflow/data/rawdata'},
 
     queue='api',
     dag=dag,

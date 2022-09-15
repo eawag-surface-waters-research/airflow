@@ -18,7 +18,7 @@ dag = DAG(
     'example_dag',
     default_args=default_args,
     description='Example Dag',
-    schedule_interval=False,
+    schedule_interval=None,
 )
 
 
@@ -29,7 +29,6 @@ def hello_world():
 
 helloworld = PythonOperator(
     task_id='hello_world',
-    provide_context=False,
     python_callable=hello_world,
     queue='api',
     dag=dag,
