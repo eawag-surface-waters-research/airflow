@@ -1,22 +1,27 @@
 version: '3.7'
 services:
-    worker-simulation:
+    remote_worker_3:
         image: worker-simulation:latest
         build:
           context: .
+          args:
+            github_token: ${GITHUB_TOKEN}
         restart: always
-        depends_on:
-            - scheduler
-        volumes:
-            - ./airflow/dags:/usr/local/airflow/dags
+        external_links:
+            - redis_1:redis
+        networks:
+            - sample_project_default
         environment:
             - FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
             - EXECUTOR=Celery
-            - PYTHONPATH=/usr/local/airflow
-        command: worker -q simulation
+        volumes:
+          - ./airflow/dags:/usr/local/airflow/dags
         env_file:
-          - env.list
-
-
-
+            - env.list
+        command: worker -q simulation
+        stdin_open: true
+        tty: true
+networks:
+    sample_project_default:
+        external: true
 

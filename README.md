@@ -9,16 +9,29 @@ For local development UI pages are available at the following:
 - Airflow Webserver (Managing DAGS) [http://localhost:8080/admin/](http://localhost:8080/admin/)
 - Flower Workers (Managing Workers) [http://localhost:5555/](http://localhost:5555/)
 
-## Install docker-compose
+## Installation
+
+### 1. Install docker-compose
 ```console 
 sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
 console sudo chmod +x /usr/local/bin/docker-compose
 console sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
 ```
+### 2. Clone repository
+```console 
+sudo apt-get -y update && sudo apt-get -y install git
+git clone https://github.com/eawag-surface-waters-research/airflow.git
+```
 
-## Docker Commands
+### 3. Add credentials
 
-### Launch containers
+Create `creds.json` using `creds-example.json` as a template and populate the values.
+```console 
+cp creds-example.json creds.json
+vim creds.json
+```
+
+### 4. Launch containers
 
 #### API Server
 ```console 
@@ -28,6 +41,8 @@ docker-compose -f docker-compose-api.yml up -d --build
 ```console 
 docker-compose -f docker-compose-simulation.yml up -d --build 
 ```
+
+## Docker Commands
 
 ### Terminate containers
 #### API Server
