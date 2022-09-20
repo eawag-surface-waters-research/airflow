@@ -7,3 +7,4 @@ airflow/plugins/*
 .env
 creds.json
 docker-compose-default.yml
+data
