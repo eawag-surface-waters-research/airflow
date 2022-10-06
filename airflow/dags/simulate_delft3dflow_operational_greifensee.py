@@ -1,9 +1,16 @@
 from datetime import timedelta
+from dateutil import relativedelta
 
 from airflow.operators.bash import BashOperator
 from airflow.utils.dates import days_ago
 
 from airflow import DAG
+
+
+def get_last_sunday(dt):
+    bd = dt + relativedelta(weekday=SU(-1))
+    return bd.strftime('%Y%m%d')
+
 
 default_args = {
     'owner': 'airflow',
@@ -12,9 +19,9 @@ default_args = {
     'email': ['james.runnalls@eawag.ch'],
     'email_on_failure': True,
     'email_on_retry': False,
+    'queue': 'simulation',
     # 'retries': 1,
     # 'retry_delay': timedelta(minutes=5),
-    'queue': 'simulation',
     # 'pool': 'backfill',
     # 'priority_weight': 10,
     # 'end_date': datetime(2016, 1, 1),
@@ -33,42 +40,37 @@ dag = DAG(
     description='Operational Delft3D-Flow simulation of Greifensee.',
     schedule_interval=None,
     tags=['simulation'],
+    user_defined_macros={'docker': 'eawag/delft3d-flow:6.03.00.62434',
+                         'model': 'delft3d-flow/greifensee',
+                         'start_date': get_last_sunday,
+                         'bucket': 'https://alplakes-eawag.s3.eu-central-1.amazonaws.com'}
 )
 
-clone_repo = BashOperator(
-    task_id='clone_repo',
-    bash_command="cd {{ params.folder }}; git clone {{ params.git }} || (cd {{ params.repo }} ; git pull)",
-    params={'folder': '/opt/airflow/data',
-            'git': 'https://github.com/eawag-surface-waters-research/alplakes-simulations.git',
-            'repo': 'alplakes-simulations'},
-    dag=dag,
-)
-
-prepare_inputs = BashOperator(
-    task_id='prepare_inputs',
-    bash_command="mkdir -p {{ params.data }}; cd {{ params.dir }}; python {{ params.script }} {{ params.yaml }}",
-    params={'dir': '/opt/airflow/data/alplakes-externaldata',
-            'script': 'src/main.py',
-            'data': '/opt/airflow/data/rawdata'},
+prepare_simulation_files = BashOperator(
+    task_id='prepare_simulation_files',
+    bash_command="mkdir -p {{ params.git_repos }};"
+                 "cd {{ params.git_repos }};"
+                 "(git clone {{ params.git_remote }}; cd {{ params.git_name }}) || (cd {{ params.git_name }} ; git stash ; git pull);"
+                 "python src/main.py -m {{ model }} -d {{ docker }} -s {{ start_date(ds) }} -u {{ bucket }}",
+    params={'git_repos': '/opt/airflow/filesystem/git',
+            'git_remote': 'https://github.com/eawag-surface-waters-research/alplakes-simulations.git',
+            'git_name': 'alplakes-simulations',
+            },
     dag=dag,
 )
 
 # Maybe use docker operator, need to run as sibling not child
 run_simulation = BashOperator(
     task_id='run_simulation',
-    bash_command="cd {{ params.dir }}; docker run -v {{ params.dir }}:/job {{ params.docker }}",
-    params={'dir': '/opt/airflow/data/alplakes-externaldata',
-            'data': '/opt/airflow/data/rawdata'},
+    bash_command="docker run {{ docker }} {{ bucket }}/{{ model }}/{{ start_date(ds) }}.zip",
     dag=dag,
 )
 
-post_processing = BashOperator(
-    task_id='download',
-    bash_command="mkdir -p {{ params.data }}; cd {{ params.dir }}; python -m {{ params.script }} {{ params.data }} {{ var.value.cosmo_ftp_password }}",
-    params={'dir': '/opt/airflow/data/alplakes-externaldata',
-            'script': 'externaldata.runs.bafu_hydrodata',
-            'data': '/opt/airflow/data/rawdata'},
+notify_api = BashOperator(
+    task_id='notify_api',
+    bash_command="curl {{ var.value.alplakes_api }}{{ params.api }}",
+    params={'api': '/new_resource?bucket=https://alplakes-eawag.s3.eu-central-1.amazonaws.com/simulations/delft3d-flow/simulations/greifensee'},
     dag=dag,
 )
 
-clone_repo >> prepare_inputs >> run_simulation >> post_processing
+prepare_simulation_files >> run_simulation >> notify_api

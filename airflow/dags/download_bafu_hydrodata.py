@@ -37,19 +37,19 @@ dag = DAG(
 
 clone_repo = BashOperator(
     task_id='clone_repo',
-    bash_command="cd {{ params.folder }}; git clone {{ params.git }} || (cd {{ params.repo }} ; git stash; git pull)",
-    params={'folder': '/opt/airflow/data',
-            'git': 'https://github.com/eawag-surface-waters-research/alplakes-externaldata.git',
-            'repo': 'alplakes-externaldata'},
+    bash_command="mkdir -p {{ params.git_repos }}; cd {{ params.git_repos }}; git clone {{ params.git_remote }} || (cd {{ params.git_name }} ; git stash; git pull)",
+    params={'git_repos': '/opt/airflow/filesystem/git',
+            'git_remote': 'https://github.com/eawag-surface-waters-research/alplakes-externaldata.git',
+            'git_name': 'alplakes-externaldata'},
     dag=dag,
 )
 
 download = BashOperator(
     task_id='download',
-    bash_command="mkdir -p {{ params.data }}; cd {{ params.dir }}; python -m {{ params.script }} {{ params.data }} {{ var.value.cosmo_ftp_password }}",
-    params={'dir': '/opt/airflow/data/alplakes-externaldata',
+    bash_command="mkdir -p {{ params.media }}; cd {{ params.git_dir }}; python -m {{ params.script }} {{ params.media }} {{ var.value.cosmo_ftp_password }}",
+    params={'git_dir': '/opt/airflow/filesystem/git/alplakes-externaldata',
             'script': 'externaldata.runs.bafu_hydrodata',
-            'data': '/opt/airflow/data/rawdata'},
+            'media': '/opt/airflow/filesystem/media'},
     dag=dag,
 )
 

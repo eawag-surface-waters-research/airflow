@@ -19,9 +19,10 @@ console sudo chmod +x /usr/local/bin/docker-compose
 console sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
 ```
 ### 2. Clone repository
-```console 
+```console
 sudo apt-get -y update && sudo apt-get -y install git
 git clone https://github.com/eawag-surface-waters-research/airflow.git
+mkdir -p filesystem
 ```
 
 ### 3. Launch containers
