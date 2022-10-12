@@ -17,6 +17,7 @@ For local development UI pages are available at the following:
 sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
 console sudo chmod +x /usr/local/bin/docker-compose
 console sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+docker login
 ```
 ### 2. Clone repository
 ```console
@@ -28,10 +29,9 @@ mkdir -p filesystem
 ### 3. Launch containers
 
 #### Define environmental variables
-- Replace **airflow** in the command below with desired admin password.
-- Replace **fernet** in the command below with the desired fernet key.
+Copy the env.example file to .env and complete the required passwords.
 ```console
-echo -e "AIRFLOW_UID=$(id -u)\nAIRFLOW_GID=0\n_AIRFLOW_WWW_USER_PASSWORD=airflow\nAIRFLOW__CORE__FERNET_KEY=fernet" > .env
+cp env.example .env
 ```
 Fernet key can be generated as follows:
 ```python
@@ -53,23 +53,14 @@ docker-compose -f docker-compose.yml up -d --build
 ```
 #### Launch container (Simulation Worker)
 ```console 
-docker-compose up airflow-worker-simulation
+docker-compose up -d --build airflow-worker-simulation
 ```
 #### Launch containers (Dev)
 ```console 
-docker-compose up --profile simulation --build
+docker-compose -f docker-compose.yml --profile simulation up --build  
 ```
 
-### 5. Add credentials (API node only)
-
-Create `creds.json` using `creds-example.json` as a template and populate the values.
-```console 
-cp creds-example.json creds.json
-vim creds.json
-```
-Then go to the user interface and upload the credentials `Admin > Variables > Choose File > Import Variables`.
-
-### 6. Open Ports
+### 5. Open Ports
 
 #### API Node
 

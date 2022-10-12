@@ -2,13 +2,20 @@ from datetime import timedelta
 from dateutil import relativedelta
 
 from airflow.operators.bash import BashOperator
+from airflow.operators.docker_operator import DockerOperator
 from airflow.utils.dates import days_ago
-
 from airflow import DAG
 
 
 def get_last_sunday(dt):
+    return "20220102"
     bd = dt + relativedelta(weekday=SU(-1))
+    return bd.strftime('%Y%m%d')
+
+
+def get_end_date(dt):
+    return "20220103"
+    bd = dt + timedelta(days=5)
     return bd.strftime('%Y%m%d')
 
 
@@ -40,37 +47,50 @@ dag = DAG(
     description='Operational Delft3D-Flow simulation of Greifensee.',
     schedule_interval=None,
     tags=['simulation'],
-    user_defined_macros={'docker': 'eawag/delft3d-flow:6.03.00.62434',
-                         'model': 'delft3d-flow/greifensee',
-                         'start_date': get_last_sunday,
-                         'bucket': 'https://alplakes-eawag.s3.eu-central-1.amazonaws.com'}
+    user_defined_macros={'model': 'delft3d-flow/greifensee',
+                         'docker': 'eawag/delft3d-flow:6.03.00.62434',
+                         'start': get_last_sunday,
+                         'end': get_end_date,
+                         'bucket': 'alplakes-eawag',
+                         'api': "http://host.docker.internal:8000",
+                         'upload': True}
 )
 
-prepare_simulation_files = BashOperator(
+"""prepare_simulation_files = BashOperator(
     task_id='prepare_simulation_files',
     bash_command="mkdir -p {{ params.git_repos }};"
                  "cd {{ params.git_repos }};"
-                 "(git clone {{ params.git_remote }}; cd {{ params.git_name }}) || (cd {{ params.git_name }} ; git stash ; git pull);"
-                 "python src/main.py -m {{ model }} -d {{ docker }} -s {{ start_date(ds) }} -u {{ bucket }}",
+                 "git clone {{ params.git_remote }} && cd {{ params.git_name }} || cd {{ params.git_name }} && git stash && git pull;"
+                 "python src/main.py -m {{ model }} -d {{ docker }} -s {{ start(ds) }} -e {{ end(ds) }} -b {{ bucket }} -u {{ upload }} -a {{ api }}",
     params={'git_repos': '/opt/airflow/filesystem/git',
             'git_remote': 'https://github.com/eawag-surface-waters-research/alplakes-simulations.git',
             'git_name': 'alplakes-simulations',
             },
     dag=dag,
-)
+)"""
 
-# Maybe use docker operator, need to run as sibling not child
-run_simulation = BashOperator(
+run_simulation = DockerOperator(
     task_id='run_simulation',
-    bash_command="docker run {{ docker }} {{ bucket }}/{{ model }}/{{ start_date(ds) }}.zip",
+    image='eawag/delft3d-flow:6.03.00.62434',
+    api_version='auto',
+    auto_remove=True,
+    # command="/bin/sleep 30",
+    # docker_url="unix://var/run/docker.sock",
+    # network_mode="bridge",
     dag=dag,
 )
 
-notify_api = BashOperator(
+"""run_simulation = BashOperator(
+    task_id='run_simulation',
+    bash_command="docker run hello-world",
+    dag=dag,
+)"""
+
+"""notify_api = BashOperator(
     task_id='notify_api',
     bash_command="curl {{ var.value.alplakes_api }}{{ params.api }}",
-    params={'api': '/new_resource?bucket=https://alplakes-eawag.s3.eu-central-1.amazonaws.com/simulations/delft3d-flow/simulations/greifensee'},
+    params={'api': '/new_resource?bucket=alplakes-eawag&simulation=delft3d-flow&model=greifensee'},
     dag=dag,
-)
+)"""
 
-prepare_simulation_files >> run_simulation >> notify_api
+run_simulation
