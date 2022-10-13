@@ -57,7 +57,7 @@ docker-compose up -d --build airflow-worker-simulation
 ```
 #### Launch containers (Dev)
 ```console 
-docker-compose -f docker-compose.yml --profile simulation up --build  
+docker-compose -f docker-compose.yml --profile simulation up --build
 ```
 
 ### 5. Open Ports

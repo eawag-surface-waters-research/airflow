@@ -16,6 +16,8 @@ x-airflow-common:
     _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
     AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
     AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
+    AIRFLOW_VAR_AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
+    AIRFLOW_VAR_AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
     AIRFLOW_VAR_COSMO_FTP_PASSWORD: "${COSMO_FTP_PASSWORD}"
   volumes:
     - ./airflow/dags:/opt/airflow/dags
@@ -111,6 +113,7 @@ services:
   airflow-worker-simulation:
     <<: *airflow-common
     command: celery worker -q simulation,general
+    user: root
     profiles:
       - simulation
     healthcheck:

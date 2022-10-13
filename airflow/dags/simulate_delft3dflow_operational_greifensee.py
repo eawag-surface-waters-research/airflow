@@ -3,6 +3,7 @@ from dateutil import relativedelta
 
 from airflow.operators.bash import BashOperator
 from airflow.operators.docker_operator import DockerOperator
+from airflow.models import Variable
 from airflow.utils.dates import days_ago
 from airflow import DAG
 
@@ -16,6 +17,11 @@ def get_last_sunday(dt):
 def get_end_date(dt):
     return "20220103"
     bd = dt + timedelta(days=5)
+    return bd.strftime('%Y%m%d')
+
+
+def get_today(dt):
+    return "20220103"
     return bd.strftime('%Y%m%d')
 
 
@@ -51,12 +57,13 @@ dag = DAG(
                          'docker': 'eawag/delft3d-flow:6.03.00.62434',
                          'start': get_last_sunday,
                          'end': get_end_date,
+                         'today': get_today,
                          'bucket': 'alplakes-eawag',
                          'api': "http://host.docker.internal:8000",
                          'upload': True}
 )
 
-"""prepare_simulation_files = BashOperator(
+prepare_simulation_files = BashOperator(
     task_id='prepare_simulation_files',
     bash_command="mkdir -p {{ params.git_repos }};"
                  "cd {{ params.git_repos }};"
@@ -67,30 +74,28 @@ dag = DAG(
             'git_name': 'alplakes-simulations',
             },
     dag=dag,
-)"""
+)
 
-run_simulation = DockerOperator(
+run_simulation = BashOperator(
     task_id='run_simulation',
-    image='eawag/delft3d-flow:6.03.00.62434',
-    api_version='auto',
-    auto_remove=True,
-    # command="/bin/sleep 30",
-    # docker_url="unix://var/run/docker.sock",
-    # network_mode="bridge",
+    bash_command='docker run -e AWS_ID={{ params.AWS_ID }} -e AWS_KEY={{ params.AWS_KEY }} {{ docker }} '
+                 '-d "{{ params.download }}_{{ start(ds) }}_{{ end(ds) }}.zip" '
+                 '-n "{{ params.netcdf }}_{{ start(ds) }}_{{ end(ds) }}.nc" '
+                 '-r "{{ params.restart }}{{ today(ds) }}.000000"',
+    params={'download': "https://alplakes-eawag.s3.eu-central-1.amazonaws.com/simulations/delft3d-flow/simulation"
+                        "-files/eawag_delft3dflow6030062434_delft3dflow_greifensee",
+            'netcdf': 's3://alplakes-eawag/simulations/delft3d-flow/results/eawag_delft3dflow6030062434_delft3dflow_greifensee',
+            'restart': 's3://alplakes-eawag/simulations/delft3d-flow/restart-files/greifensee/tri-rst.Simulation_Web_rst.',
+            'AWS_ID': Variable.get("AWS_ACCESS_KEY_ID"),
+            'AWS_KEY': Variable.get("AWS_SECRET_ACCESS_KEY")},
     dag=dag,
 )
 
-"""run_simulation = BashOperator(
-    task_id='run_simulation',
-    bash_command="docker run hello-world",
-    dag=dag,
-)"""
-
 """notify_api = BashOperator(
     task_id='notify_api',
-    bash_command="curl {{ var.value.alplakes_api }}{{ params.api }}",
+    bash_command="curl {{ api }}{{ params.api }}",
     params={'api': '/new_resource?bucket=alplakes-eawag&simulation=delft3d-flow&model=greifensee'},
     dag=dag,
 )"""
 
-run_simulation
+prepare_simulation_files >> run_simulation
