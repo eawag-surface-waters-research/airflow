@@ -12,13 +12,12 @@ For local development UI pages are available at the following:
 
 ## Installation
 
-### 1. Install docker-compose
-```console 
-sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-console sudo chmod +x /usr/local/bin/docker-compose
-console sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
-docker login
-```
+### 1. Install docker
+
+Follow the official install instructions [here](https://docs.docker.com/engine/install/)
+
+Then run `docker login` to enable access to private docker images.
+
 ### 2. Clone repository
 ```console
 sudo apt-get -y update && sudo apt-get -y install git

@@ -32,7 +32,7 @@ dag = DAG(
     'download_meteoswiss_cosmo',
     default_args=default_args,
     description='Download COSMO data from MeteoSwiss.',
-    schedule_interval=None,
+    schedule_interval="0 8 * * *",
     tags=['api'],
 )
 
