@@ -26,12 +26,6 @@ x-airflow-common:
     - ../filesystem:/opt/airflow/filesystem
     - /var/run/docker.sock:/var/run/docker.sock
   user: "${AIRFLOW_UID:-50000}:0"
-  depends_on:
-    &airflow-common-depends-on
-    redis:
-      condition: service_healthy
-    postgres:
-      condition: service_healthy
 
 services:
   postgres:
@@ -47,6 +41,10 @@ services:
       interval: 5s
       retries: 5
     restart: unless-stopped
+    deploy:
+      replicas: 1
+      placement:
+        constraints: [ node.labels.service_type==master ]
 
   redis:
     image: redis:latest
@@ -58,6 +56,10 @@ services:
       timeout: 30s
       retries: 50
     restart: unless-stopped
+    deploy:
+      replicas: 1
+      placement:
+        constraints: [ node.labels.service_type==master ]
 
   airflow-webserver:
     <<: *airflow-common
@@ -70,10 +72,10 @@ services:
       timeout: 10s
       retries: 5
     restart: unless-stopped
-    depends_on:
-      <<: *airflow-common-depends-on
-      airflow-init:
-        condition: service_completed_successfully
+    deploy:
+      replicas: 1
+      placement:
+        constraints: [ node.labels.service_type==master ]
 
   airflow-scheduler:
     <<: *airflow-common
@@ -84,10 +86,10 @@ services:
       timeout: 10s
       retries: 5
     restart: unless-stopped
-    depends_on:
-      <<: *airflow-common-depends-on
-      airflow-init:
-        condition: service_completed_successfully
+    deploy:
+      replicas: 1
+      placement:
+        constraints: [ node.labels.service_type==master ]
 
   airflow-worker-api:
     <<: *airflow-common
@@ -105,10 +107,10 @@ services:
       # See https://airflow.apache.org/docs/docker-stack/entrypoint.html#signal-propagation
       DUMB_INIT_SETSID: "0"
     restart: unless-stopped
-    depends_on:
-      <<: *airflow-common-depends-on
-      airflow-init:
-        condition: service_completed_successfully
+    deploy:
+      replicas: 1
+      placement:
+        constraints: [ node.labels.service_type==master ]
 
   airflow-worker-simulation:
     <<: *airflow-common
@@ -131,10 +133,10 @@ services:
     restart: unless-stopped
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    depends_on:
-      <<: *airflow-common-depends-on
-      airflow-init:
-        condition: service_completed_successfully
+    deploy:
+      replicas: 1
+      placement:
+        constraints: [ node.labels.service_type==worker ]
 
   airflow-triggerer:
     <<: *airflow-common
@@ -145,10 +147,10 @@ services:
       timeout: 10s
       retries: 5
     restart: unless-stopped
-    depends_on:
-      <<: *airflow-common-depends-on
-      airflow-init:
-        condition: service_completed_successfully
+    deploy:
+      replicas: 1
+      placement:
+        constraints: [ node.labels.service_type==master ]
 
   flower:
     <<: *airflow-common
@@ -161,10 +163,10 @@ services:
       timeout: 10s
       retries: 5
     restart: unless-stopped
-    depends_on:
-      <<: *airflow-common-depends-on
-      airflow-init:
-        condition: service_completed_successfully
+    deploy:
+      replicas: 1
+      placement:
+        constraints: [ node.labels.service_type==master ]
 
   airflow-init:
     <<: *airflow-common
