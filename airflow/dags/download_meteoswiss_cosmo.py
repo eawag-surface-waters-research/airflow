@@ -13,7 +13,6 @@ default_args = {
     'email': ['james.runnalls@eawag.ch'],
     'email_on_failure': True,
     'email_on_retry': False,
-    'queue': 'api',
     # 'retries': 1,
     # 'retry_delay': timedelta(minutes=5),
     # 'pool': 'backfill',

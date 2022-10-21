@@ -2,6 +2,7 @@ from datetime import timedelta
 import logging
 
 from airflow.operators.python_operator import PythonOperator
+from airflow.contrib.operators.docker_swarm_operator import DockerSwarmOperator
 from airflow.operators.bash import BashOperator
 from airflow.utils.dates import days_ago
 
@@ -38,21 +39,30 @@ dag = DAG(
 )
 
 
-def hello_world():
-    logging.info('hello world')
-    print("hello world")
+def test_python_func():
+    logging.info('PythonOperator working.')
+    print("PythonOperator working.")
 
 
-helloworld = PythonOperator(
-    task_id='hello_world',
-    python_callable=hello_world,
+test_python = PythonOperator(
+    task_id='test_python',
+    python_callable=test_python_func,
     dag=dag,
 )
 
-goodbyeworld = BashOperator(
-    task_id='bye_world',
-    bash_command='echo "goodbye world"',
+test_bash = BashOperator(
+    task_id='test_bash',
+    bash_command='echo "BashOperator working."',
     dag=dag,
 )
 
-helloworld >> goodbyeworld
+test_swarm = DockerSwarmOperator(
+    task_id='test_swarm',
+    api_version='auto',
+    command='echo "DockerSwarmOperator working."',
+    image='alpine',
+    auto_remove=True,
+    dag=dag,
+)
+
+test_python >> test_bash >> test_swarm

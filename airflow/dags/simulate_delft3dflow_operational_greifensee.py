@@ -9,19 +9,19 @@ from airflow import DAG
 
 
 def get_last_sunday(dt):
-    return "20220102"
+    return "20221016"
     bd = dt + relativedelta(weekday=SU(-1))
     return bd.strftime('%Y%m%d')
 
 
 def get_end_date(dt):
-    return "20220103"
+    return "20221017"
     bd = dt + timedelta(days=5)
     return bd.strftime('%Y%m%d')
 
 
 def get_today(dt):
-    return "20220103"
+    return "20221018"
     return bd.strftime('%Y%m%d')
 
 
@@ -32,7 +32,6 @@ default_args = {
     'email': ['james.runnalls@eawag.ch'],
     'email_on_failure': True,
     'email_on_retry': False,
-    'queue': 'simulation',
     # 'retries': 1,
     # 'retry_delay': timedelta(minutes=5),
     # 'pool': 'backfill',
@@ -76,7 +75,7 @@ prepare_simulation_files = BashOperator(
     dag=dag,
 )
 
-run_simulation = BashOperator(
+"""run_simulation = BashOperator(
     task_id='run_simulation',
     bash_command='docker run -e AWS_ID={{ params.AWS_ID }} -e AWS_KEY={{ params.AWS_KEY }} {{ docker }} '
                  '-d "{{ params.download }}_{{ start(ds) }}_{{ end(ds) }}.zip" '
@@ -89,7 +88,7 @@ run_simulation = BashOperator(
             'AWS_ID': Variable.get("AWS_ACCESS_KEY_ID"),
             'AWS_KEY': Variable.get("AWS_SECRET_ACCESS_KEY")},
     dag=dag,
-)
+)"""
 
 """notify_api = BashOperator(
     task_id='notify_api',
