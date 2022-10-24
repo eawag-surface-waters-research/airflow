@@ -38,21 +38,21 @@ dag = DAG(
 )
 
 
-def hello_world():
-    logging.info('hello world')
-    print("hello world")
+def python_test_func():
+    logging.info('Python Operator functioning.')
+    print("Python Operator functioning.")
 
 
-helloworld = PythonOperator(
-    task_id='hello_world',
-    python_callable=hello_world,
+python_test = PythonOperator(
+    task_id='python_test',
+    python_callable=python_test_func,
     dag=dag,
 )
 
-goodbyeworld = BashOperator(
-    task_id='bye_world',
-    bash_command='echo "goodbye world"',
+bash_test = BashOperator(
+    task_id='bash_test',
+    bash_command='echo "Bash Operator functioning."',
     dag=dag,
 )
 
-helloworld >> goodbyeworld
+python_test >> bash_test
