@@ -8,3 +8,5 @@ airflow/plugins/*
 creds.json
 docker-compose-default.yml
 data
+keys/*
+!keys/.gitkeep

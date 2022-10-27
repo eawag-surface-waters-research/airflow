@@ -45,18 +45,18 @@ cat .env
 
 #### Launch containers (API Node)
 ```console 
-docker-compose up airflow-init
+docker compose up airflow-init
 ```
 ```console 
-docker-compose -f docker-compose.yml up -d --build 
+docker compose -f docker-compose.yml up -d --build 
 ```
 #### Launch container (Simulation Worker)
 ```console 
-docker-compose up -d --build airflow-worker-simulation
+docker compose up -d --build airflow-worker-simulation
 ```
 #### Launch containers (Dev)
 ```console 
-docker-compose -f docker-compose.yml --profile simulation up --build
+docker compose -f docker-compose.yml --profile simulation up --build
 ```
 
 ### 5. Open Ports
@@ -82,7 +82,7 @@ In order to communicate with the API Node you need to open the following ports:
 
 ### Terminate containers
 ```console 
-docker-compose -f docker-compose.yml down
+docker compose -f docker-compose.yml down
 ```
 
 ### List active containers

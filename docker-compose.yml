@@ -23,6 +23,7 @@ x-airflow-common:
     - ./airflow/dags:/opt/airflow/dags
     - ./airflow/logs:/opt/airflow/logs
     - ./airflow/plugins:/opt/airflow/plugins
+    - ./keys:/opt/airflow/keys
     - "${FILESYSTEM}:/opt/airflow/filesystem"
     - /var/run/docker.sock:/var/run/docker.sock
   user: "${AIRFLOW_UID:-50000}:0"
@@ -259,8 +260,3 @@ services:
 
 volumes:
   postgres-db-volume:
-
-networks:
-  default:
-    name: alplakes-network
-    external: true
