@@ -43,6 +43,12 @@ Check content of .env contains the aforementioned variables.
 cat .env
 ```
 
+#### Add ssh keys
+
+The `keys` folder will be mounted to the docker instance at `/opt/airflow/keys`.
+
+Upload your keys to the server. There is often issues with permissions, suggested is `chmod -R 777 keys`, `chmod 700 keys/id_rsa`
+
 #### Launch containers (API Node)
 ```console 
 docker compose up airflow-init
