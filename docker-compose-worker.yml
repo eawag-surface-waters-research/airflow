@@ -13,10 +13,10 @@ services:
       retries: 5
     environment:
       AIRFLOW__CORE__EXECUTOR: CeleryExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@eaw-alplakes2:5432/airflow
-      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@eaw-alplakes2:5432/airflow
-      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@eaw-alplakes2:5432/airflow
-      AIRFLOW__CELERY__BROKER_URL: redis://:@eaw-alplakes2:6379/0
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "postgresql+psycopg2://airflow:airflow@${POSTGRES_ADDRESS:-postgres}/airflow"
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: "postgresql+psycopg2://airflow:airflow@${POSTGRES_ADDRESS:-postgres}/airflow"
+      AIRFLOW__CELERY__RESULT_BACKEND: "db+postgresql://airflow:airflow@${POSTGRES_ADDRESS:-postgres}/airflow"
+      AIRFLOW__CELERY__BROKER_URL: "redis://:@${REDIS_ADDRESS:-redis:6379}/0"
       AIRFLOW__CORE__FERNET_KEY: "${AIRFLOW__CORE__FERNET_KEY}"
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
       AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
@@ -28,6 +28,11 @@ services:
       AIRFLOW__SMTP__SMTP_PASSWORD: "${GMAIL_PASSWORD}"
       AIRFLOW__SMTP__SMTP_PORT: 587
       AIRFLOW__SMTP__SMTP_MAIL_FROM: "${GMAIL_ADDRESS}"
+      AIRFLOW__LOGGING__REMOTE_LOGGING: True
+      AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER: s3://alplakes-eawag/airflow/logs
+      AIRFLOW__LOGGING__REMOTE_LOG_CONN_ID: ALPLAKES_S3_CONN
+      AIRFLOW__LOGGING__ENCRYPT_S3_LOGS: False
+      AIRFLOW_CONN_ALPLAKES_S3_CONN: "s3://${AWS_ACCESS_KEY_ID}:${AWS_SECRET_ACCESS_KEY}@S3"
       _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
       AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
       AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"

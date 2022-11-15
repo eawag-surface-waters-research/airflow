@@ -32,7 +32,7 @@ git clone git@github.com:eawag-surface-waters-research/airflow.git
 mkdir -p filesystem
 ```
 
-### 3. Launch containers
+### 3. Configure Environment
 
 #### Define environmental variables
 Copy the env.example file to .env and complete the required passwords.
@@ -57,7 +57,9 @@ The `keys` folder will be mounted to the docker instance at `/opt/airflow/keys`.
 
 Upload your keys to the server. There is often issues with permissions, suggested is `chmod -R 777 keys`, `chmod 700 keys/id_rsa`
 
-#### Launch containers (Production)
+### 4. Launch Services
+
+#### Production Environment
 Main
 ```console 
 docker compose -f docker-compose.yml up -d --build 
@@ -67,10 +69,18 @@ Worker
 docker compose -f docker-compose-worker.yml up -d --build 
 ```
 ***
-The worker node is configured to look at eaw-alplakes2 for the connections. This needs to be altered in `docker-compose-worker.yml` if the main node is located at an alternate IP address. 
-Also this is only valid for machines inside the Eawag network, in order to launch workers on machines outside the Eawag network, the ports 6370 and 5432 would need to be exposed on the main node and the IP address adjusted to the remote IP.
+The worker node defaults to looking for connections on the local docker network.
+If the worker node is on a different machine from the main node then the `POSTGRES_ADDRESS` and `REDIS_ADDRESS` variables need to be set in the .env file.
+
+For the current Eawag setup this is:
+```yaml
+POSTGRES_ADDRESS=eaw-alplakes2:5432
+REDIS_ADDRESS=eaw-alplakes2:6379
+```
+The setup above is only valid for machines inside the Eawag network, in order to launch workers on machines outside the Eawag network, 
+the ports 6370 and 5432 would need to be exposed on the main node and the variables adjusted to the new addresses.
 ***
-#### Launch containers (Local)
+#### Development Environment
 ```console 
 docker compose -f docker-compose.yml --profile simulation up --build
 ```
