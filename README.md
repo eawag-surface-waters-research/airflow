@@ -28,7 +28,7 @@ Then run `docker login` to enable access to private docker images.
 ### 2. Clone repository
 ```console
 sudo apt-get -y update && sudo apt-get -y install git
-git clone https://github.com/eawag-surface-waters-research/airflow.git
+git clone git@github.com:eawag-surface-waters-research/airflow.git
 mkdir -p filesystem
 ```
 
@@ -58,9 +58,18 @@ The `keys` folder will be mounted to the docker instance at `/opt/airflow/keys`.
 Upload your keys to the server. There is often issues with permissions, suggested is `chmod -R 777 keys`, `chmod 700 keys/id_rsa`
 
 #### Launch containers (Production)
+Main
 ```console 
 docker compose -f docker-compose.yml up -d --build 
 ```
+Worker
+```console 
+docker compose -f docker-compose-worker.yml up -d --build 
+```
+***
+The worker node is configured to look at eaw-alplakes2 for the connections. This needs to be altered in `docker-compose-worker.yml` if the main node is located at an alternate IP address. 
+Also this is only valid for machines inside the Eawag network, in order to launch workers on machines outside the Eawag network, the ports 6370 and 5432 would need to be exposed on the main node and the IP address adjusted to the remote IP.
+***
 #### Launch containers (Local)
 ```console 
 docker compose -f docker-compose.yml --profile simulation up --build
