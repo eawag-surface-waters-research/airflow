@@ -96,7 +96,7 @@ the ports 6370 and 5432 would need to be exposed on the main node and the variab
 ***
 #### Development Environment
 ```console 
-docker compose -f docker-compose.yml --profile simulation up --build
+docker compose -f docker-compose.yml --profile dev up --build
 ```
 
 ## Managing Instance

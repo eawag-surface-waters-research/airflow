@@ -14,7 +14,6 @@ default_args = {
     'email': ['james.runnalls@eawag.ch'],
     'email_on_failure': True,
     'email_on_retry': False,
-    'queue': 'general',
     # 'retries': 1,
     # 'retry_delay': timedelta(minutes=5),
     # 'queue': 'api',
@@ -31,9 +30,9 @@ default_args = {
     # 'trigger_rule': 'all_success'
 }
 dag = DAG(
-    'test_dag',
+    'test_setup',
     default_args=default_args,
-    description='Test Dag',
+    description='Test all services functioning.',
     schedule_interval=None,
     tags=['test'],
 )
@@ -44,16 +43,39 @@ def python_test_func():
     print("Python Operator functioning.")
 
 
-python_test = PythonOperator(
-    task_id='python_test',
+python_test_api = PythonOperator(
+    task_id='python_test_api',
     python_callable=python_test_func,
+    queue='api',
     dag=dag,
 )
 
-bash_test = BashOperator(
-    task_id='bash_test',
+python_test_simulation = PythonOperator(
+    task_id='python_test_simulation',
+    python_callable=python_test_func,
+    queue='simulation',
+    dag=dag,
+)
+
+bash_test_api = BashOperator(
+    task_id='bash_test_api',
     bash_command='echo "Bash Operator functioning."',
+    queue='api',
     dag=dag,
 )
 
-python_test >> bash_test
+bash_test_simulation = BashOperator(
+    task_id='bash_test_simulation',
+    bash_command='echo "Bash Operator functioning."',
+    queue='simulation',
+    dag=dag,
+)
+
+bash_test_simulation_docker = BashOperator(
+    task_id='bash_test_simulation_docker',
+    bash_command='docker run hello-world',
+    queue='simulation',
+    dag=dag,
+)
+
+python_test_api >> bash_test_api >> python_test_simulation >> bash_test_simulation >> bash_test_simulation_docker
