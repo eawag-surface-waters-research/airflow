@@ -9,19 +9,19 @@ from airflow import DAG
 
 
 def get_last_sunday(dt):
-    return "20220102"
+    return "20221009"
     bd = dt + relativedelta(weekday=SU(-1))
     return bd.strftime('%Y%m%d')
 
 
 def get_end_date(dt):
-    return "20220103"
+    return "20221011"
     bd = dt + timedelta(days=5)
     return bd.strftime('%Y%m%d')
 
 
 def get_today(dt):
-    return "20220103"
+    return "20221012"
     return bd.strftime('%Y%m%d')
 
 
