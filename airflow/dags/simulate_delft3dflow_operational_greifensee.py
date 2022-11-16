@@ -59,7 +59,7 @@ dag = DAG(
                          'end': get_end_date,
                          'today': get_today,
                          'bucket': 'alplakes-eawag',
-                         'api': "http://host.docker.internal:8000",
+                         'api': "http://eaw-alplakes2:8000",
                          'upload': True}
 )
 

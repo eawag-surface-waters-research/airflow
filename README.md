@@ -57,6 +57,20 @@ The `keys` folder will be mounted to the docker instance at `/opt/airflow/keys`.
 
 Upload your keys to the server. There is often issues with permissions, suggested is `chmod -R 777 keys`, `chmod 700 keys/id_rsa`
 
+#### Auto update repo
+
+If you want to auto pull any changes from the git repository. Make `update.sh` executable and add it to the crontab.
+The example below pulls the repo every 5 mins, starting on the hour (so multiple instances update at the same time). 
+
+```console
+chmod +x update.sh
+crontab -e
+```
+```crontab
+0-59/5 * * * * /home/eawag.wroot.emp-eaw.ch/runnalja/airflow/update.sh
+```
+
+
 ### 4. Launch Services
 
 #### Production Environment
