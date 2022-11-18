@@ -99,6 +99,17 @@ the ports 6370 and 5432 would need to be exposed on the main node and the variab
 docker compose -f docker-compose.yml --profile dev up --build
 ```
 
+***
+It's possible that there could be a port conflict when launching the development environment due to Postgres/ Redis running on the host machine.
+In this case it is possible to change the ports being exposed on the docker containers to avoid local conflicts by setting the following parameters in the .env file.
+Default values are 5432 for Postgres and 6379 for Redis. 
+```yaml
+POSTGRES_PORT=5431
+REDIS_PORT=6378
+```
+
+***
+
 ## Managing Instance
 
 #### Terminate containers
