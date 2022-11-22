@@ -5,6 +5,9 @@ from airflow.operators.bash import BashOperator
 from airflow.operators.docker_operator import DockerOperator
 from airflow.models import Variable
 from airflow.utils.dates import days_ago
+
+from functions.email import report_failure
+
 from airflow import DAG
 
 
@@ -73,6 +76,7 @@ prepare_simulation_files = BashOperator(
             'git_remote': 'https://github.com/eawag-surface-waters-research/alplakes-simulations.git',
             'git_name': 'alplakes-simulations',
             },
+    on_failure_callback=report_failure,
     dag=dag,
 )
 
@@ -88,6 +92,7 @@ run_simulation = BashOperator(
             'restart': 's3://alplakes-eawag/simulations/delft3d-flow/restart-files/biel/tri-rst.Simulation_Web_rst.',
             'AWS_ID': Variable.get("AWS_ACCESS_KEY_ID"),
             'AWS_KEY': Variable.get("AWS_SECRET_ACCESS_KEY")},
+    on_failure_callback=report_failure,
     dag=dag,
 )
 

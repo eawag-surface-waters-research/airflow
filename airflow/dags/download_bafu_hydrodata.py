@@ -4,6 +4,8 @@ from airflow.operators.bash import BashOperator
 from airflow.models import Variable
 from airflow.utils.dates import days_ago
 
+from functions.email import report_failure
+
 from airflow import DAG
 
 default_args = {
@@ -11,7 +13,7 @@ default_args = {
     'depends_on_past': False,
     'start_date': days_ago(2),
     'email': ['james.runnalls@eawag.ch'],
-    'email_on_failure': True,
+    'email_on_failure': False,
     'email_on_retry': False,
     'queue': 'api',
     # 'retries': 1,
@@ -43,6 +45,7 @@ clone_repo = BashOperator(
     params={'git_repos': '/opt/airflow/filesystem/git',
             'git_remote': 'https://github.com/eawag-surface-waters-research/alplakes-externaldata.git',
             'git_name': 'alplakes-externaldata'},
+    on_failure_callback=report_failure,
     dag=dag,
 )
 
@@ -54,6 +57,7 @@ download = BashOperator(
             'source': 'bafu_hydrodata',
             'filesystem': '/opt/airflow/filesystem/media',
             'bafu_ssh_key': '/opt/airflow/keys/bafu/id_rsa'},
+    on_failure_callback=report_failure,
     dag=dag,
 )
 

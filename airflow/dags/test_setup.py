@@ -3,7 +3,10 @@ import logging
 
 from airflow.operators.python_operator import PythonOperator
 from airflow.operators.bash import BashOperator
+from airflow.operators.email import EmailOperator
 from airflow.utils.dates import days_ago
+
+from functions.email import report_failure
 
 from airflow import DAG
 
@@ -12,7 +15,7 @@ default_args = {
     'depends_on_past': False,
     'start_date': days_ago(2),
     'email': ['james.runnalls@eawag.ch'],
-    'email_on_failure': True,
+    'email_on_failure': False,
     'email_on_retry': False,
     # 'retries': 1,
     # 'retry_delay': timedelta(minutes=5),
@@ -43,10 +46,16 @@ def python_test_func():
     print("Python Operator functioning.")
 
 
+def python_fail_func():
+    logging.info('Testing email on failure.')
+    raise ValueError("Test failure event.")
+
+
 python_test_api = PythonOperator(
     task_id='python_test_api',
     python_callable=python_test_func,
     queue='api',
+    on_failure_callback=report_failure,
     dag=dag,
 )
 
@@ -54,6 +63,15 @@ python_test_simulation = PythonOperator(
     task_id='python_test_simulation',
     python_callable=python_test_func,
     queue='simulation',
+    on_failure_callback=report_failure,
+    dag=dag,
+)
+
+python_test_fail = PythonOperator(
+    task_id='python_test_fail',
+    python_callable=python_fail_func,
+    queue='api',
+    on_failure_callback=report_failure,
     dag=dag,
 )
 
@@ -61,6 +79,7 @@ bash_test_api = BashOperator(
     task_id='bash_test_api',
     bash_command='echo "Bash Operator functioning."',
     queue='api',
+    on_failure_callback=report_failure,
     dag=dag,
 )
 
@@ -68,6 +87,7 @@ bash_test_simulation = BashOperator(
     task_id='bash_test_simulation',
     bash_command='echo "Bash Operator functioning."',
     queue='simulation',
+    on_failure_callback=report_failure,
     dag=dag,
 )
 
@@ -75,7 +95,8 @@ bash_test_simulation_docker = BashOperator(
     task_id='bash_test_simulation_docker',
     bash_command='docker run hello-world',
     queue='simulation',
+    on_failure_callback=report_failure,
     dag=dag,
 )
 
-python_test_api >> bash_test_api >> python_test_simulation >> bash_test_simulation >> bash_test_simulation_docker
+python_test_api >> bash_test_api >> python_test_simulation >> bash_test_simulation >> bash_test_simulation_docker >> python_test_fail

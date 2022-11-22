@@ -4,6 +4,8 @@ from airflow.operators.bash import BashOperator
 from airflow.models import Variable
 from airflow.utils.dates import days_ago
 
+from functions.email import report_failure
+
 from airflow import DAG
 
 default_args = {
@@ -43,6 +45,7 @@ clone_repo = BashOperator(
     params={'git_repos': '/opt/airflow/filesystem/git',
             'git_remote': 'https://github.com/eawag-surface-waters-research/alplakes-externaldata.git',
             'git_name': 'alplakes-externaldata'},
+    on_failure_callback=report_failure,
     dag=dag,
 )
 
@@ -54,6 +57,7 @@ download = BashOperator(
             'source': 'meteoswiss_cosmo',
             'filesystem': '/opt/airflow/filesystem/media',
             'COSMO_FTP_PASSWORD': Variable.get("COSMO_FTP_PASSWORD")},
+    on_failure_callback=report_failure,
     dag=dag,
 )
 
