@@ -63,6 +63,7 @@ dag = DAG(
                          'today': get_today,
                          'bucket': 'alplakes-eawag',
                          'api': "http://eaw-alplakes2:8000",
+                         'cores': 2,
                          'upload': True}
 )
 
@@ -85,6 +86,7 @@ run_simulation = BashOperator(
     bash_command='docker run -e AWS_ID={{ params.AWS_ID }} -e AWS_KEY={{ params.AWS_KEY }} {{ docker }} '
                  '-d "{{ params.download }}_{{ start(ds) }}_{{ end(ds) }}.zip" '
                  '-n "{{ params.netcdf }}_{{ start(ds) }}_{{ end(ds) }}.nc" '
+                 '-p {{ cores }}'
                  '-r "{{ params.restart }}{{ today(ds) }}.000000"',
     params={'download': "https://alplakes-eawag.s3.eu-central-1.amazonaws.com/simulations/delft3d-flow/simulation"
                         "-files/eawag_delft3dflow6030062434_delft3dflow_greifensee",
