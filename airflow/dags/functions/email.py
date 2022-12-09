@@ -5,6 +5,7 @@ import traceback
 
 def report_failure(context):
     ti = context.get('task_instance')
+    print(ti)
     s3_url = 'https://alplakes-eawag.s3.eu-central-1.amazonaws.com/airflow/logs/' + \
              urllib.parse.quote((f'dag_id={ti.dag_id}/'
                                  f'run_id={ti.run_id}/'

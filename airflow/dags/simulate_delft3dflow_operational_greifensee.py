@@ -1,5 +1,4 @@
-from datetime import timedelta
-from dateutil import relativedelta
+from datetime import timedelta, datetime
 
 from airflow.operators.bash import BashOperator
 from airflow.operators.docker_operator import DockerOperator
@@ -7,22 +6,9 @@ from airflow.models import Variable
 from airflow.utils.dates import days_ago
 
 from functions.email import report_failure
+from functions.simulate import get_last_sunday, get_end_date, get_today
 
 from airflow import DAG
-
-
-def get_last_sunday(dt):
-    bd = dt + relativedelta(weekday=SU(-1))
-    return bd.strftime('%Y%m%d')
-
-
-def get_end_date(dt):
-    bd = dt + timedelta(days=5)
-    return bd.strftime('%Y%m%d')
-
-
-def get_today(dt):
-    return dt.strftime('%Y%m%d')
 
 
 default_args = {
@@ -30,7 +16,7 @@ default_args = {
     'depends_on_past': False,
     'start_date': days_ago(2),
     'email': ['james.runnalls@eawag.ch'],
-    'email_on_failure': True,
+    'email_on_failure': False,
     'email_on_retry': False,
     'queue': 'simulation',
     # 'retries': 1,

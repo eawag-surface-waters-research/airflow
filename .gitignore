@@ -10,3 +10,4 @@ docker-compose-default.yml
 data
 keys/*
 !keys/.gitkeep
+airflow/dags/functions/__pycache__
