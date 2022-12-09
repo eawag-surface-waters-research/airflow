@@ -12,20 +12,17 @@ from airflow import DAG
 
 
 def get_last_sunday(dt):
-    return "20221009"
     bd = dt + relativedelta(weekday=SU(-1))
     return bd.strftime('%Y%m%d')
 
 
 def get_end_date(dt):
-    return "20221011"
     bd = dt + timedelta(days=5)
     return bd.strftime('%Y%m%d')
 
 
 def get_today(dt):
-    return "20221012"
-    return bd.strftime('%Y%m%d')
+    return dt.strftime('%Y%m%d')
 
 
 default_args = {
@@ -54,7 +51,7 @@ dag = DAG(
     'simulate_delft3dflow_operational_greifensee',
     default_args=default_args,
     description='Operational Delft3D-Flow simulation of Greifensee.',
-    schedule_interval=None,
+    schedule_interval="0 9 * * *",
     tags=['simulation'],
     user_defined_macros={'model': 'delft3d-flow/greifensee',
                          'docker': 'eawag/delft3d-flow:6.03.00.62434',
