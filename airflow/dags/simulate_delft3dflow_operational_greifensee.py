@@ -38,6 +38,7 @@ dag = DAG(
     default_args=default_args,
     description='Operational Delft3D-Flow simulation of Greifensee.',
     schedule_interval="0 9 * * *",
+    catchup=False,
     tags=['simulation'],
     user_defined_macros={'model': 'delft3d-flow/greifensee',
                          'docker': 'eawag/delft3d-flow:6.03.00.62434',

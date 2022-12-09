@@ -35,6 +35,7 @@ dag = DAG(
     default_args=default_args,
     description='Download Hydrodata from Bafu.',
     schedule_interval="0 7 * * *",
+    catchup=False,
     tags=['api'],
 )
 

@@ -34,13 +34,13 @@ default_args = {
     # 'trigger_rule': 'all_success'
 }
 dag = DAG(
-    'simulate_delft3dflow_operational_biel',
+    'simulate_delft3dflow_operational_geneva',
     default_args=default_args,
-    description='Operational Delft3D-Flow simulation of Lake Biel.',
+    description='Operational Delft3D-Flow simulation of Lake Geneva.',
     schedule_interval="0 9 * * *",
     catchup=False,
     tags=['simulation'],
-    user_defined_macros={'model': 'delft3d-flow/biel',
+    user_defined_macros={'model': 'delft3d-flow/geneva',
                          'docker': 'eawag/delft3d-flow:6.03.00.62434',
                          'start': get_last_sunday,
                          'end': get_end_date,
@@ -73,9 +73,9 @@ run_simulation = BashOperator(
                  '-p {{ cores }} '
                  '-r "{{ params.restart }}{{ today(ds) }}.000000"',
     params={'download': "https://alplakes-eawag.s3.eu-central-1.amazonaws.com/simulations/delft3d-flow/simulation"
-                        "-files/eawag_delft3dflow6030062434_delft3dflow_biel",
-            'netcdf': 's3://alplakes-eawag/simulations/delft3d-flow/results/eawag_delft3dflow6030062434_delft3dflow_biel',
-            'restart': 's3://alplakes-eawag/simulations/delft3d-flow/restart-files/biel/tri-rst.Simulation_Web_rst.',
+                        "-files/eawag_delft3dflow6030062434_delft3dflow_geneva",
+            'netcdf': 's3://alplakes-eawag/simulations/delft3d-flow/results/eawag_delft3dflow6030062434_delft3dflow_geneva',
+            'restart': 's3://alplakes-eawag/simulations/delft3d-flow/restart-files/geneva/tri-rst.Simulation_Web_rst.',
             'AWS_ID': Variable.get("AWS_ACCESS_KEY_ID"),
             'AWS_KEY': Variable.get("AWS_SECRET_ACCESS_KEY")},
     on_failure_callback=report_failure,
@@ -85,7 +85,7 @@ run_simulation = BashOperator(
 """notify_api = BashOperator(
     task_id='notify_api',
     bash_command="curl {{ api }}{{ params.api }}",
-    params={'api': '/new_resource?bucket=alplakes-eawag&simulation=delft3d-flow&model=biel'},
+    params={'api': '/new_resource?bucket=alplakes-eawag&simulation=delft3d-flow&model=geneva'},
     dag=dag,
 )"""
 
