@@ -11,21 +11,6 @@ from functions.simulate import get_last_sunday, get_end_date, get_today, get_res
 from airflow import DAG
 
 
-def get_last_sunday(dt):
-    return "20221204"
-
-
-def get_end_date(dt):
-    return "20221215"
-
-
-def get_today(dt):
-    return "20221211"
-
-
-def get_restart(dt):
-    return "20221211"
-
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
