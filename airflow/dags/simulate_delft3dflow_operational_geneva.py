@@ -6,7 +6,7 @@ from airflow.models import Variable
 from airflow.utils.dates import days_ago
 
 from functions.email import report_failure
-from functions.simulate import get_last_sunday, get_end_date, get_today
+from functions.simulate import get_last_sunday, get_end_date, get_today, get_restart
 
 from airflow import DAG
 
@@ -45,6 +45,7 @@ dag = DAG(
                          'start': get_last_sunday,
                          'end': get_end_date,
                          'today': get_today,
+                         'restart': get_restart,
                          'bucket': 'alplakes-eawag',
                          'api': "http://eaw-alplakes2:8000",
                          'cores': 5,
@@ -56,7 +57,7 @@ prepare_simulation_files = BashOperator(
     bash_command="mkdir -p {{ params.git_repos }};"
                  "cd {{ params.git_repos }};"
                  "git clone {{ params.git_remote }} && cd {{ params.git_name }} || cd {{ params.git_name }} && git stash && git pull;"
-                 "python src/main.py -m {{ model }} -d {{ docker }} -s {{ start(ds) }} -e {{ end(ds) }} -b {{ bucket }} -u {{ upload }} -a {{ api }}",
+                 "python src/main.py -m {{ model }} -d {{ docker }} -t {{ today(ds) }} -s {{ start(ds) }} -e {{ end(ds) }} -b {{ bucket }} -u {{ upload }} -a {{ api }}",
     params={'git_repos': '/opt/airflow/filesystem/git',
             'git_remote': 'https://github.com/eawag-surface-waters-research/alplakes-simulations.git',
             'git_name': 'alplakes-simulations',
@@ -69,9 +70,9 @@ run_simulation = BashOperator(
     task_id='run_simulation',
     bash_command='docker run -e AWS_ID={{ params.AWS_ID }} -e AWS_KEY={{ params.AWS_KEY }} {{ docker }} '
                  '-d "{{ params.download }}_{{ start(ds) }}_{{ end(ds) }}.zip" '
-                 '-n "{{ params.netcdf }}_{{ start(ds) }}_{{ end(ds) }}.nc" '
+                 '-n "{{ params.netcdf }}_{{ start(ds) }}.nc" '
                  '-p {{ cores }} '
-                 '-r "{{ params.restart }}{{ today(ds) }}.000000"',
+                 '-r "{{ params.restart }}{{ restart(ds) }}.000000"',
     params={'download': "https://alplakes-eawag.s3.eu-central-1.amazonaws.com/simulations/delft3d-flow/simulation"
                         "-files/eawag_delft3dflow6030062434_delft3dflow_geneva",
             'netcdf': 's3://alplakes-eawag/simulations/delft3d-flow/results/eawag_delft3dflow6030062434_delft3dflow_geneva',
