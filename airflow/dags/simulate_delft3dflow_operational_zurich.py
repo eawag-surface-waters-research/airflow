@@ -1,12 +1,12 @@
 from datetime import timedelta, datetime
 
 from airflow.operators.bash import BashOperator
-from airflow.operators.docker_operator import DockerOperator
+from airflow.operators.python_operator import PythonOperator
 from airflow.models import Variable
 from airflow.utils.dates import days_ago
 
 from functions.email import report_failure
-from functions.simulate import get_last_sunday, get_end_date, get_today, get_restart
+from functions.simulate import get_last_sunday, get_end_date, get_today, get_restart, post_notify_api
 
 from airflow import DAG
 
@@ -83,11 +83,14 @@ run_simulation = BashOperator(
     dag=dag,
 )
 
-"""notify_api = BashOperator(
+notify_api = PythonOperator(
     task_id='notify_api',
-    bash_command="curl {{ api }}{{ params.api }}",
-    params={'api': '/new_resource?bucket=alplakes-eawag&simulation=delft3d-flow&model=zurich'},
+    python_callable=post_notify_api,
+    params={"file": "https://alplakes-eawag.s3.eu-central-1.amazonaws.com/simulations/delft3d-flow/results/eawag_delft3dflow6030062434_delft3dflow_zurich",
+            "api": "http://eaw-alplakes2:8000"},
+    provide_context=True,
+    on_failure_callback=report_failure,
     dag=dag,
-)"""
+)
 
-prepare_simulation_files >> run_simulation
+prepare_simulation_files >> run_simulation >> notify_api
