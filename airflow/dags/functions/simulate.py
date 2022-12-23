@@ -24,7 +24,9 @@ def get_restart(dt):
 
 def post_notify_api(params, **kwargs):
     url = params["api"] + "/simulations/notify"
-    body = {"type": "new", "value": "{}_{}.nc".format(params["file"], get_last_sunday(str(kwargs['ds'])))}
+    body = {"type": "new",
+            "model": params["model"],
+            "value": "{}_{}.nc".format(params["file"], get_last_sunday(str(kwargs['ds'])))}
     resp = requests.post(url, json=body)
     if resp.status_code != 200:
         raise ValueError("Failed to notify Alplakes API.")
