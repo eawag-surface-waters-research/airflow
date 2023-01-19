@@ -39,7 +39,7 @@ dag = DAG(
     description='Operational Delft3D-Flow simulation of Lake Biel.',
     schedule_interval="0 9 * * *",
     catchup=False,
-    tags=['simulation'],
+    tags=['simulation', 'operational'],
     user_defined_macros={'model': 'delft3d-flow/biel',
                          'docker': 'eawag/delft3d-flow:6.03.00.62434',
                          'start': get_last_sunday,

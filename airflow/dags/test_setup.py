@@ -37,7 +37,7 @@ dag = DAG(
     default_args=default_args,
     description='Test all services functioning.',
     schedule_interval=None,
-    tags=['test'],
+    tags=['test', 'on demand'],
 )
 
 

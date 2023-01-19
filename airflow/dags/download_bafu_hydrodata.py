@@ -36,7 +36,7 @@ dag = DAG(
     description='Download Hydrodata from Bafu.',
     schedule_interval="0 7 * * *",
     catchup=False,
-    tags=['api'],
+    tags=['api', 'operational'],
 )
 
 clone_repo = BashOperator(

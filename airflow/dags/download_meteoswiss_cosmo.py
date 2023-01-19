@@ -36,7 +36,7 @@ dag = DAG(
     description='Download COSMO data from MeteoSwiss.',
     schedule_interval="0 8 * * *",
     catchup=False,
-    tags=['api'],
+    tags=['api', 'operational'],
 )
 
 clone_repo = BashOperator(
