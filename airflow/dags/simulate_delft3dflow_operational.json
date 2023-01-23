@@ -1,0 +1,22 @@
+[
+    {
+        "simulation_id": "biel",
+        "schedule_interval": "0 9 * * *",
+        "cores": 5
+    },
+    {
+        "simulation_id": "zurich",
+        "schedule_interval": "0 9 * * *",
+        "cores": 5
+    },
+    {
+        "simulation_id": "geneva",
+        "schedule_interval": "0 9 * * *",
+        "cores": 5
+    },
+    {
+        "simulation_id": "greifensee",
+        "schedule_interval": "0 9 * * *",
+        "cores": 5
+    }
+]

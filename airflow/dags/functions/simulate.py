@@ -22,6 +22,13 @@ def get_restart(dt):
     return bd.strftime('%Y%m%d')
 
 
+def number_of_cores(task_instance, cores):
+    if task_instance.try_number > 1:
+        return 1
+    else:
+        return cores
+
+
 def post_notify_api(params, **kwargs):
     url = params["api"] + "/simulations/notify"
     body = {"type": "new",
