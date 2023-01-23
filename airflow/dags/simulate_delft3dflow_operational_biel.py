@@ -48,7 +48,7 @@ dag = DAG(
                          'restart': get_restart,
                          'bucket': 'alplakes-eawag',
                          'api': "http://eaw-alplakes2:8000",
-                         'cores': 5,
+                         'cores': 4,
                          'upload': True}
 )
 
