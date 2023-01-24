@@ -6,17 +6,17 @@
     },
     {
         "simulation_id": "zurich",
-        "schedule_interval": "0 9 * * *",
+        "schedule_interval": "5 9 * * *",
         "cores": 5
     },
     {
         "simulation_id": "geneva",
-        "schedule_interval": "0 9 * * *",
+        "schedule_interval": "10 9 * * *",
         "cores": 5
     },
     {
         "simulation_id": "greifensee",
-        "schedule_interval": "0 9 * * *",
+        "schedule_interval": "15 9 * * *",
         "cores": 5
     }
 ]
