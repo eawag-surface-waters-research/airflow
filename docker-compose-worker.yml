@@ -39,6 +39,7 @@ services:
       AIRFLOW_VAR_AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
       AIRFLOW_VAR_AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
       AIRFLOW_VAR_COSMO_FTP_PASSWORD: "${COSMO_FTP_PASSWORD}"
+      AIRFLOW_VAR_FILESYSTEM: "${FILESYSTEM}"
       # Required to handle warm shutdown of the celery workers properly
       # See https://airflow.apache.org/docs/docker-stack/entrypoint.html#signal-propagation
       DUMB_INIT_SETSID: "0"

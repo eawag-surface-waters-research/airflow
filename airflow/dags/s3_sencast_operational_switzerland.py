@@ -6,7 +6,6 @@ from airflow.models import Variable
 from airflow.utils.dates import days_ago
 
 from functions.email import report_failure
-from functions.simulate import get_last_sunday, get_end_date, get_today, get_restart, post_notify_api
 
 from airflow import DAG
 
@@ -15,9 +14,9 @@ default_args = {
     'depends_on_past': False,
     'start_date': days_ago(2),
     'email': ['james.runnalls@eawag.ch'],
-    'email_on_failure': True,
+    'email_on_failure': False,
     'email_on_retry': False,
-    'queue': 'api',
+    'queue': 'simulation',
     # 'retries': 1,
     # 'retry_delay': timedelta(minutes=5),
     # 'pool': 'backfill',
@@ -35,49 +34,48 @@ default_args = {
 dag = DAG(
     's3_sencast_operational_switzerland',
     default_args=default_args,
-    description='Process S3 data for Switzerland.',
+    description='Process Sentinel 3 data for Switzerland.',
     schedule_interval=None,
     catchup=False,
-    tags=['remote sensing', 'operational'],
-    user_defined_macros={'model': 'delft3d-flow/biel',
-                         'docker': 'eawag/delft3d-flow:6.03.00.62434',
-                         'start': get_last_sunday,
-                         'end': get_end_date,
-                         'today': get_today,
-                         'restart': get_restart,
-                         'bucket': 'alplakes-eawag',
-                         'api': "http://eaw-alplakes2:8000",
-                         'cores': 5,
-                         'upload': True}
+    tags=['simulation', 'operational'],
+    user_defined_macros={'docker': 'eawag/sencast:0.0.1',
+                         'DIAS': '/opt/airflow/filesystem/DIAS',
+                         'git_repos': '/opt/airflow/filesystem/git',
+                         'git_name': 'sencast',
+                         'git_remote': 'https://github.com/eawag-surface-waters-research/sencast.git',
+                         'environment_file': 'docker.ini',
+                         'FILESYSTEM': Variable.get("FILESYSTEM")}
+)
+
+
+def python_edit_input():
+    logging.info('Editing Sencast input.')
+    print("Editing Sencast input.")
+
+
+clone_repo = BashOperator(
+    task_id='clone_repo',
+    bash_command="mkdir -p {{ DIAS }}; mkdir -p {{ git_repos }}; cd {{ git_repos }}; "
+                 "git clone --depth 1 {{ git_remote }} || (cd {{ git_name }} ; git stash ; git pull)",
+    on_failure_callback=report_failure,
+    dag=dag,
+)
+
+edit_input = PythonOperator(
+    task_id='edit_input',
+    python_callable=python_edit_input,
+    on_failure_callback=report_failure,
+    dag=dag,
 )
 
 run_sencast = BashOperator(
     task_id='run_sencast',
-    bash_command='docker run -e AWS_ID={{ params.AWS_ID }} -e AWS_KEY={{ params.AWS_KEY }} {{ docker }} '
-                 '-d "{{ params.download }}_{{ start(ds) }}_{{ end(ds) }}.zip" '
-                 '-n "{{ params.netcdf }}_{{ start(ds) }}.nc" '
-                 '-p {{ cores }} '
-                 '-r "{{ params.restart }}{{ restart(ds) }}.000000"',
-    params={'download': "https://alplakes-eawag.s3.eu-central-1.amazonaws.com/simulations/sencast/simulation"
-                        "-files/eawag_delft3dflow6030062434_delft3dflow_geneva",
-            'netcdf': 's3://alplakes-eawag/simulations/delft3d-flow/results/eawag_delft3dflow6030062434_delft3dflow_geneva',
-            'restart': 's3://alplakes-eawag/simulations/delft3d-flow/restart-files/geneva/tri-rst.Simulation_Web_rst.',
-            'AWS_ID': Variable.get("AWS_ACCESS_KEY_ID"),
-            'AWS_KEY': Variable.get("AWS_SECRET_ACCESS_KEY")},
+    bash_command='docker run '
+                 '-v {{ FILESYSTEM }}/DIAS:/DIAS '
+                 '-v {{ FILESYSTEM }}/git/{{ git_name }}:/sencast '
+                 '-i {{ docker }} -e {{ environment_file }} -p datalakes_sui_S3.ini',
     on_failure_callback=report_failure,
     dag=dag,
 )
 
-notify_api = PythonOperator(
-    task_id='notify_api',
-    python_callable=post_notify_api,
-    params={
-        "file": "https://alplakes-eawag.s3.eu-central-1.amazonaws.com/simulations/delft3d-flow/results/eawag_delft3dflow6030062434_delft3dflow_geneva",
-        "api": "http://eaw-alplakes2:8000",
-        "model": "delft3d-flow"},
-    provide_context=True,
-    on_failure_callback=report_failure,
-    dag=dag,
-)
-
-run_sencast >> notify_api
+clone_repo >> edit_input >> run_sencast

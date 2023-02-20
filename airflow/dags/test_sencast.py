@@ -32,12 +32,12 @@ default_args = {
     # 'trigger_rule': 'all_success'
 }
 dag = DAG(
-    's2_sencast_operational_switzerland',
+    'sencast_test',
     default_args=default_args,
-    description='Process Sentinel 2 data for Switzerland.',
+    description='Test run for Sencast',
     schedule_interval=None,
     catchup=False,
-    tags=['simulation', 'operational'],
+    tags=['test', 'on demand'],
     user_defined_macros={'docker': 'eawag/sencast:0.0.1',
                          'DIAS': '/opt/airflow/filesystem/DIAS',
                          'git_repos': '/opt/airflow/filesystem/git',
@@ -47,12 +47,6 @@ dag = DAG(
                          'FILESYSTEM': Variable.get("FILESYSTEM")}
 )
 
-
-def python_edit_input():
-    logging.info('Editing Sencast input.')
-    print("Editing Sencast input.")
-
-
 clone_repo = BashOperator(
     task_id='clone_repo',
     bash_command="mkdir -p {{ DIAS }}; mkdir -p {{ git_repos }}; cd {{ git_repos }}; "
@@ -61,21 +55,14 @@ clone_repo = BashOperator(
     dag=dag,
 )
 
-edit_input = PythonOperator(
-    task_id='edit_input',
-    python_callable=python_edit_input,
-    on_failure_callback=report_failure,
-    dag=dag,
-)
-
-run_sencast = BashOperator(
-    task_id='run_sencast',
+run_sencast_test = BashOperator(
+    task_id='run_sencast_test',
     bash_command='docker run '
                  '-v {{ FILESYSTEM }}/DIAS:/DIAS '
                  '-v {{ FILESYSTEM }}/git/{{ git_name }}:/sencast '
-                 '-i {{ docker }} -e {{ environment_file }} -p datalakes_sui_S2.ini',
+                 '-i {{ docker }} -e {{ environment_file }} -t',
     on_failure_callback=report_failure,
     dag=dag,
 )
 
-clone_repo >> edit_input >> run_sencast
+clone_repo >> run_sencast_test
