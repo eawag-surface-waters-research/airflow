@@ -36,9 +36,9 @@ dag = DAG(
     's3_sencast_operational_switzerland',
     default_args=default_args,
     description='Process Sentinel 3 data for Switzerland.',
-    schedule_interval=None,
+    schedule_interval="0 23 * * *",
     catchup=False,
-    tags=['simulation', 'operational'],
+    tags=['sencast', 'operational'],
     user_defined_macros={'docker': 'eawag/sencast:0.0.1',
                          'DIAS': '/opt/airflow/filesystem/DIAS',
                          'git_repos': '/opt/airflow/filesystem/git',
@@ -60,7 +60,7 @@ set_parameter_dates = PythonOperator(
     task_id='edit_input',
     python_callable=write_logical_date_to_parameter_file,
     on_failure_callback=report_failure,
-    op_kwargs={"file": '/opt/airflow/filesystem/git/sencast/parameters/datalakes_sui_S3.ini', "date": "2023-02-23"},
+    op_kwargs={"file": '/opt/airflow/filesystem/git/sencast/parameters/datalakes_sui_S3.ini'},
     dag=dag,
 )
 

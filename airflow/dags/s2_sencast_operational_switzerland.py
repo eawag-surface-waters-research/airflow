@@ -6,6 +6,7 @@ from airflow.models import Variable
 from airflow.utils.dates import days_ago
 
 from functions.email import report_failure
+from functions.sencast import write_logical_date_to_parameter_file
 
 from airflow import DAG
 
@@ -35,9 +36,9 @@ dag = DAG(
     's2_sencast_operational_switzerland',
     default_args=default_args,
     description='Process Sentinel 2 data for Switzerland.',
-    schedule_interval=None,
+    schedule_interval="0 1 * * *",
     catchup=False,
-    tags=['simulation', 'operational'],
+    tags=['sencast', 'operational'],
     user_defined_macros={'docker': 'eawag/sencast:0.0.1',
                          'DIAS': '/opt/airflow/filesystem/DIAS',
                          'git_repos': '/opt/airflow/filesystem/git',
@@ -47,12 +48,6 @@ dag = DAG(
                          'FILESYSTEM': Variable.get("FILESYSTEM")}
 )
 
-
-def python_edit_input():
-    logging.info('Editing Sencast input.')
-    print("Editing Sencast input.")
-
-
 clone_repo = BashOperator(
     task_id='clone_repo',
     bash_command="mkdir -p {{ DIAS }}; mkdir -p {{ git_repos }}; cd {{ git_repos }}; "
@@ -61,10 +56,11 @@ clone_repo = BashOperator(
     dag=dag,
 )
 
-edit_input = PythonOperator(
+set_parameter_dates = PythonOperator(
     task_id='edit_input',
-    python_callable=python_edit_input,
+    python_callable=write_logical_date_to_parameter_file,
     on_failure_callback=report_failure,
+    op_kwargs={"file": '/opt/airflow/filesystem/git/sencast/parameters/datalakes_sui_S2.ini'},
     dag=dag,
 )
 
@@ -78,4 +74,4 @@ run_sencast = BashOperator(
     dag=dag,
 )
 
-clone_repo >> edit_input >> run_sencast
+clone_repo >> set_parameter_dates >> run_sencast

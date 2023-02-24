@@ -37,7 +37,7 @@ dag = DAG(
     description='Test run for Sencast',
     schedule_interval=None,
     catchup=False,
-    tags=['test', 'on demand'],
+    tags=['sencast', 'test'],
     user_defined_macros={'docker': 'eawag/sencast:0.0.1',
                          'DIAS': '/opt/airflow/filesystem/DIAS',
                          'git_repos': '/opt/airflow/filesystem/git',
