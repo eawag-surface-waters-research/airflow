@@ -13,7 +13,7 @@ default_args = {
     'depends_on_past': False,
     'start_date': days_ago(2),
     'email': ['james.runnalls@eawag.ch'],
-    'email_on_failure': True,
+    'email_on_failure': False,
     'email_on_retry': False,
     'queue': 'api',
     # 'retries': 1,

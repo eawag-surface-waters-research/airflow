@@ -6,6 +6,7 @@ from airflow.models import Variable
 from airflow.utils.dates import days_ago
 
 from functions.email import report_failure
+from functions.sencast import write_logical_date_to_parameter_file
 
 from airflow import DAG
 
@@ -47,12 +48,6 @@ dag = DAG(
                          'FILESYSTEM': Variable.get("FILESYSTEM")}
 )
 
-
-def python_edit_input():
-    logging.info('Editing Sencast input.')
-    print("Editing Sencast input.")
-
-
 clone_repo = BashOperator(
     task_id='clone_repo',
     bash_command="mkdir -p {{ DIAS }}; mkdir -p {{ git_repos }}; cd {{ git_repos }}; "
@@ -61,10 +56,11 @@ clone_repo = BashOperator(
     dag=dag,
 )
 
-edit_input = PythonOperator(
+set_parameter_dates = PythonOperator(
     task_id='edit_input',
-    python_callable=python_edit_input,
+    python_callable=write_logical_date_to_parameter_file,
     on_failure_callback=report_failure,
+    op_kwargs={"file": '/opt/airflow/filesystem/git/sencast/parameters/datalakes_sui_S3.ini', "date": "2023-02-23"},
     dag=dag,
 )
 
@@ -78,4 +74,4 @@ run_sencast = BashOperator(
     dag=dag,
 )
 
-clone_repo >> edit_input >> run_sencast
+clone_repo >> set_parameter_dates >> run_sencast
