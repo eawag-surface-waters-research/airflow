@@ -56,16 +56,16 @@ clone_repo = BashOperator(
     dag=dag,
 )
 
-set_parameter_dates = PythonOperator(
-    task_id='edit_input',
+set_parameter_dates_logical = PythonOperator(
+    task_id='set_parameter_dates_logical',
     python_callable=write_logical_date_to_parameter_file,
     on_failure_callback=report_failure,
     op_kwargs={"file": '/opt/airflow/filesystem/git/sencast/parameters/datalakes_sui_S3.ini'},
     dag=dag,
 )
 
-run_sencast = BashOperator(
-    task_id='run_sencast',
+run_sencast_logical = BashOperator(
+    task_id='run_sencast_logical',
     bash_command='docker run '
                  '-v {{ FILESYSTEM }}/DIAS:/DIAS '
                  '-v {{ FILESYSTEM }}/git/{{ git_name }}:/sencast '
@@ -74,4 +74,22 @@ run_sencast = BashOperator(
     dag=dag,
 )
 
-clone_repo >> set_parameter_dates >> run_sencast
+set_parameter_dates_14days = PythonOperator(
+    task_id='set_parameter_dates_14days',
+    python_callable=write_logical_date_to_parameter_file,
+    on_failure_callback=report_failure,
+    op_kwargs={"file": '/opt/airflow/filesystem/git/sencast/parameters/datalakes_sui_S3.ini', "offset": -14},
+    dag=dag,
+)
+
+run_sencast_14days = BashOperator(
+    task_id='run_sencast_14days',
+    bash_command='docker run '
+                 '-v {{ FILESYSTEM }}/DIAS:/DIAS '
+                 '-v {{ FILESYSTEM }}/git/{{ git_name }}:/sencast '
+                 '-i {{ docker }} -e {{ environment_file }} -p datalakes_sui_S3.ini',
+    on_failure_callback=report_failure,
+    dag=dag,
+)
+
+clone_repo >> set_parameter_dates_logical >> run_sencast_logical >> set_parameter_dates_14days >> run_sencast_14days
