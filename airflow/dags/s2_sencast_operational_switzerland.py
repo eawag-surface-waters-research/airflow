@@ -36,7 +36,7 @@ dag = DAG(
     's2_sencast_operational_switzerland',
     default_args=default_args,
     description='Process Sentinel 2 data for Switzerland.',
-    schedule_interval="0 1 * * *",
+    schedule_interval="0 2 * * *",
     catchup=False,
     tags=['sencast', 'operational'],
     user_defined_macros={'docker': 'eawag/sencast:0.0.1',
