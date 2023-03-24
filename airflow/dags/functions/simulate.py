@@ -4,21 +4,25 @@ from dateutil.relativedelta import relativedelta, SU
 
 
 def get_last_sunday(dt):
-    bd = datetime.strptime(dt, "%Y-%m-%d") + relativedelta(weekday=SU(-1))
+    today = datetime.strptime(dt, "%Y-%m-%d") + timedelta(days=1)
+    bd = today + relativedelta(weekday=SU(-1))
     return bd.strftime('%Y%m%d')
 
 
 def get_end_date(dt):
-    bd = datetime.strptime(dt, "%Y-%m-%d") + timedelta(days=6)
+    today = datetime.strptime(dt, "%Y-%m-%d") + timedelta(days=1)
+    bd = today + timedelta(days=5)
     return bd.strftime('%Y%m%d')
 
 
 def get_today(dt):
-    return (datetime.strptime(dt, "%Y-%m-%d") + timedelta(days=1)).strftime('%Y%m%d')
+    today = datetime.strptime(dt, "%Y-%m-%d") + timedelta(days=1)
+    return today.strftime('%Y%m%d')
 
 
 def get_restart(dt):
-    bd = datetime.strptime(dt, "%Y-%m-%d") + relativedelta(weekday=SU(-1)) + timedelta(days=7)
+    today = datetime.strptime(dt, "%Y-%m-%d") + timedelta(days=1)
+    bd = today + relativedelta(weekday=SU(-1)) + timedelta(days=7)
     return bd.strftime('%Y%m%d')
 
 
