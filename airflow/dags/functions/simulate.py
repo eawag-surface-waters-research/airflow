@@ -9,12 +9,12 @@ def get_last_sunday(dt):
 
 
 def get_end_date(dt):
-    bd = datetime.strptime(dt, "%Y-%m-%d") + timedelta(days=4)
+    bd = datetime.strptime(dt, "%Y-%m-%d") + timedelta(days=6)
     return bd.strftime('%Y%m%d')
 
 
 def get_today(dt):
-    return datetime.strptime(dt, "%Y-%m-%d").strftime('%Y%m%d')
+    return (datetime.strptime(dt, "%Y-%m-%d") + timedelta(days=1)).strftime('%Y%m%d')
 
 
 def get_restart(dt):
