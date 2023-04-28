@@ -18,5 +18,10 @@
         "simulation_id": "greifensee",
         "schedule_interval": "15 9 * * *",
         "cores": 5
+    },
+    {
+        "simulation_id": "joux",
+        "schedule_interval": "20 9 * * *",
+        "cores": 5
     }
 ]
