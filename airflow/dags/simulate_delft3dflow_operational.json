@@ -23,5 +23,10 @@
         "simulation_id": "joux",
         "schedule_interval": "20 9 * * *",
         "cores": 5
+    },
+    {
+        "simulation_id": "murten",
+        "schedule_interval": "25 9 * * *",
+        "cores": 5
     }
 ]
