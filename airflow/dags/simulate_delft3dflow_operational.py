@@ -42,8 +42,10 @@ def create_dag(dag_id, parameters):
         schedule_interval=parameters["schedule_interval"],
         catchup=False,
         tags=['simulation', 'operational'],
-        user_defined_macros={'model': 'delft3d-flow/' + parameters["simulation_id"],
+        user_defined_macros={'filesystem': '/opt/airflow/filesystem',
+                             'model': 'delft3d-flow/' + parameters["simulation_id"],
                              'docker': 'eawag/delft3d-flow:6.03.00.62434',
+                             'simulation_folder_prefix': 'eawag_delft3dflow6030062434_delft3dflow_',
                              'start': get_last_sunday,
                              'end': get_end_date,
                              'today': get_today,
@@ -51,36 +53,35 @@ def create_dag(dag_id, parameters):
                              'bucket': 'alplakes-eawag',
                              'api': "http://eaw-alplakes2:8000",
                              'cores': parameters["cores"],
-                             'number_of_cores': number_of_cores,
-                             'upload': True}
+                             'id': parameters["simulation_id"],
+                             'simulation_repo_name': "alplakes-simulations",
+                             'simulation_repo_https': "https://github.com/eawag-surface-waters-research/alplakes-simulations.git",
+                             'api_user': "runnalja",
+                             'api_server': 'alplakes2',
+                             'api_server_folder': "/nfsmount/filesystem/media/simulations/delft3d-flow/results/{}/".format(parameters["simulation_id"]),
+                             'number_of_cores': number_of_cores}
     )
 
     prepare_simulation_files = BashOperator(
         task_id='prepare_simulation_files',
-        bash_command="mkdir -p {{ params.git_repos }};"
-                     "cd {{ params.git_repos }};"
-                     "git clone {{ params.git_remote }} && cd {{ params.git_name }} || cd {{ params.git_name }} && git stash && git pull;"
-                     "python src/main.py -m {{ model }} -d {{ docker }} -t {{ today(ds) }} -s {{ start(ds) }} -e {{ end(ds) }} -b {{ bucket }} -u {{ upload }} -a {{ api }}",
-        params={'git_repos': '/opt/airflow/filesystem/git',
-                'git_remote': 'https://github.com/eawag-surface-waters-research/alplakes-simulations.git',
-                'git_name': 'alplakes-simulations',
-                },
+        bash_command="mkdir -p {{ filesystem }}/git;"
+                     "cd {{ filesystem }}/git;"
+                     "git clone {{ simulation_repo_https }} && cd {{ simulation_repo_name }} || cd {{ simulation_repo_name }} && git stash && git pull;"
+                     "python src/main.py -m {{ model }} -d {{ docker }} -t {{ today(ds) }} -s {{ start(ds) }} -e {{ end(ds) }} -b {{ bucket }} -u True -a {{ api }}",
         on_failure_callback=report_failure,
         dag=dag,
     )
 
     run_simulation = BashOperator(
         task_id='run_simulation',
-        bash_command='docker run -e AWS_ID={{ params.AWS_ID }} -e AWS_KEY={{ params.AWS_KEY }} {{ docker }} '
-                     '-d "{{ params.download }}_{{ start(ds) }}_{{ end(ds) }}.zip" '
-                     '-n "{{ params.netcdf }}_{{ start(ds) }}.nc" '
+        bash_command='docker run '
+                     '-e AWS_ID={{ params.AWS_ID }} '
+                     '-e AWS_KEY={{ params.AWS_KEY }} '
+                     '-v {{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}:/job'
+                     '{{ docker }}'
                      '-p {{ number_of_cores(task_instance, cores) }} '
                      '-r "{{ params.restart }}{{ restart(ds) }}.000000"',
-        params={'download': "https://alplakes-eawag.s3.eu-central-1.amazonaws.com/simulations/delft3d-flow/simulation"
-                            "-files/eawag_delft3dflow6030062434_delft3dflow_" + parameters["simulation_id"],
-                'netcdf': 's3://alplakes-eawag/simulations/delft3d-flow/results'
-                          '/eawag_delft3dflow6030062434_delft3dflow_' + parameters["simulation_id"],
-                'restart': 's3://alplakes-eawag/simulations/delft3d-flow/restart-files/{}/tri-rst.Simulation_Web_rst.'.format(
+        params={'restart': 's3://alplakes-eawag/simulations/delft3d-flow/restart-files/{}/tri-rst.Simulation_Web_rst.'.format(
                     parameters["simulation_id"]),
                 'AWS_ID': Variable.get("AWS_ACCESS_KEY_ID"),
                 'AWS_KEY': Variable.get("AWS_SECRET_ACCESS_KEY")},
@@ -88,20 +89,31 @@ def create_dag(dag_id, parameters):
         dag=dag,
     )
 
-    notify_api = PythonOperator(
-        task_id='notify_api',
-        python_callable=post_notify_api,
-        params={
-            "file": "https://alplakes-eawag.s3.eu-central-1.amazonaws.com/simulations/delft3d-flow/results"
-                    "/eawag_delft3dflow6030062434_delft3dflow_" + parameters["simulation_id"],
-            "api": "http://eaw-alplakes2:8000",
-            "model": "delft3d-flow"},
-        provide_context=True,
+    standardise_simulation_output = BashOperator(
+        task_id='standardise_simulation_output',
+        bash_command="cd {{ filesystem }}/git/{{ simulation_repo_name }};"
+                     "python src/postprocess.py -f {{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}",
         on_failure_callback=report_failure,
         dag=dag,
     )
 
-    prepare_simulation_files >> run_simulation >> notify_api
+    calculate_parameters = BashOperator(
+        task_id='calculate_parameters',
+        bash_command="",
+        on_failure_callback=report_failure,
+        dag=dag,
+    )
+
+    send_results = BashOperator(
+        task_id='send_results',
+        bash_command="sshpass -p {{ scp_password }} scp -r "
+                     "{{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}/postprocess/* "
+                     "{{ api_user }}@{{ api_server }}:{{ api_server_folder }}",
+        on_failure_callback=report_failure,
+        dag=dag,
+    )
+
+    prepare_simulation_files >> run_simulation >> standardise_simulation_output >> calculate_parameters >> send_results
 
     return dag
 

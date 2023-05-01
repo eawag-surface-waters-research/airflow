@@ -6,4 +6,5 @@ USER root
 RUN apt-get -y update && apt-get -y install git
 RUN curl https://download.docker.com/linux/debian/dists/bullseye/pool/stable/amd64/docker-ce-cli_20.10.18~3-0~debian-bullseye_amd64.deb  --output /docker-ce-cli_20.10.18~3-0~debian-bullseye_amd64.deb
 RUN dpkg -i /docker-ce-cli_20.10.18~3-0~debian-bullseye_amd64.deb
+RUN apt-get -y install sshpass
 USER airflow
