@@ -43,9 +43,10 @@ def create_dag(dag_id, parameters):
         catchup=False,
         tags=['simulation', 'operational'],
         user_defined_macros={'filesystem': '/opt/airflow/filesystem',
+                             'FILESYSTEM': Variable.get("FILESYSTEM"),
                              'model': 'delft3d-flow/' + parameters["simulation_id"],
                              'docker': 'eawag/delft3d-flow:6.03.00.62434',
-                             'simulation_folder_prefix': 'eawag_delft3dflow6030062434_delft3dflow_',
+                             'simulation_folder_prefix': 'eawag_delft3dflow6030062434_delft3dflow',
                              'start': get_last_sunday,
                              'end': get_end_date,
                              'today': get_today,
@@ -56,9 +57,10 @@ def create_dag(dag_id, parameters):
                              'id': parameters["simulation_id"],
                              'simulation_repo_name': "alplakes-simulations",
                              'simulation_repo_https': "https://github.com/eawag-surface-waters-research/alplakes-simulations.git",
-                             'api_user': "runnalja",
-                             'api_server': 'alplakes2',
-                             'api_server_folder': "/nfsmount/filesystem/media/simulations/delft3d-flow/results/{}/".format(parameters["simulation_id"]),
+                             'api_user': "alplakes",
+                             'api_server': 'eaw-alplakes2',
+                             'API_PASSWORD': Variable.get("API_PASSWORD"),
+                             'api_server_folder': "/nfsmount/filesystem/media/simulations/delft3d-flow/results/{}".format(parameters["simulation_id"]),
                              'number_of_cores': number_of_cores}
     )
 
@@ -67,7 +69,7 @@ def create_dag(dag_id, parameters):
         bash_command="mkdir -p {{ filesystem }}/git;"
                      "cd {{ filesystem }}/git;"
                      "git clone {{ simulation_repo_https }} && cd {{ simulation_repo_name }} || cd {{ simulation_repo_name }} && git stash && git pull;"
-                     "python src/main.py -m {{ model }} -d {{ docker }} -t {{ today(ds) }} -s {{ start(ds) }} -e {{ end(ds) }} -b {{ bucket }} -u True -a {{ api }}",
+                     "python src/main.py -m {{ model }} -d {{ docker }} -t {{ today(ds) }} -s {{ start(ds) }} -e {{ end(ds) }} -b {{ bucket }} -u False -a {{ api }}",
         on_failure_callback=report_failure,
         dag=dag,
     )
@@ -77,8 +79,8 @@ def create_dag(dag_id, parameters):
         bash_command='docker run '
                      '-e AWS_ID={{ params.AWS_ID }} '
                      '-e AWS_KEY={{ params.AWS_KEY }} '
-                     '-v {{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}:/job'
-                     '{{ docker }}'
+                     '-v {{ FILESYSTEM }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}:/job '
+                     '{{ docker }} '
                      '-p {{ number_of_cores(task_instance, cores) }} '
                      '-r "{{ params.restart }}{{ restart(ds) }}.000000"',
         params={'restart': 's3://alplakes-eawag/simulations/delft3d-flow/restart-files/{}/tri-rst.Simulation_Web_rst.'.format(
@@ -106,7 +108,8 @@ def create_dag(dag_id, parameters):
 
     send_results = BashOperator(
         task_id='send_results',
-        bash_command="sshpass -p {{ scp_password }} scp -r "
+        bash_command="sshpass -p {{ API_PASSWORD }} scp -r "
+                     "-o StrictHostKeyChecking=no "
                      "{{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}/postprocess/* "
                      "{{ api_user }}@{{ api_server }}:{{ api_server_folder }}",
         on_failure_callback=report_failure,

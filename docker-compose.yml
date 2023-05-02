@@ -32,6 +32,7 @@ x-airflow-common:
     AIRFLOW_VAR_AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
     AIRFLOW_VAR_COSMO_FTP_PASSWORD: "${COSMO_FTP_PASSWORD}"
     AIRFLOW_VAR_FILESYSTEM: "${FILESYSTEM}"
+    AIRFLOW_VAR_API_PASSWORD: "${API_PASSWORD}"
   volumes:
     - ./airflow/dags:/opt/airflow/dags
     - ./airflow/logs:/opt/airflow/logs
