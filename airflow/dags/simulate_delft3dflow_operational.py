@@ -7,7 +7,7 @@ from airflow.models import Variable
 from airflow.utils.dates import days_ago
 
 from functions.email import report_failure
-from functions.simulate import get_last_sunday, get_end_date, get_today, get_restart, number_of_cores, post_notify_api
+from functions.simulate import get_last_sunday, get_end_date, get_today, get_restart, number_of_cores, post_notify_api, parse_restart
 
 from airflow import DAG
 
@@ -55,6 +55,7 @@ def create_dag(dag_id, parameters):
                              'api': "http://eaw-alplakes2:8000",
                              'cores': parameters["cores"],
                              'id': parameters["simulation_id"],
+                             "restart_file": parse_restart(parameters["restart_file"]),
                              'simulation_repo_name': "alplakes-simulations",
                              'simulation_repo_https': "https://github.com/eawag-surface-waters-research/alplakes-simulations.git",
                              'api_user': "alplakes",
@@ -69,7 +70,7 @@ def create_dag(dag_id, parameters):
         bash_command="mkdir -p {{ filesystem }}/git;"
                      "cd {{ filesystem }}/git;"
                      "git clone {{ simulation_repo_https }} && cd {{ simulation_repo_name }} || cd {{ simulation_repo_name }} && git stash && git pull;"
-                     "python src/main.py -m {{ model }} -d {{ docker }} -t {{ today(ds) }} -s {{ start(ds) }} -e {{ end(ds) }} -b {{ bucket }} -u True -a {{ api }}",
+                     "python src/main.py -m {{ model }} -d {{ docker }} {{ restart_file }} -t {{ today(ds) }} -s {{ start(ds) }} -e {{ end(ds) }} -b {{ bucket }} -u True -a {{ api }}",
         on_failure_callback=report_failure,
         dag=dag,
     )

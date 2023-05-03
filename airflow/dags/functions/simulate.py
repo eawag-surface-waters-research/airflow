@@ -26,6 +26,13 @@ def get_restart(dt):
     return bd.strftime('%Y%m%d')
 
 
+def parse_restart(restart_file):
+    if restart_file == false:
+        return "-x"
+    else:
+        return ""
+
+
 def number_of_cores(task_instance, cores):
     if task_instance.try_number > 1:
         return 1

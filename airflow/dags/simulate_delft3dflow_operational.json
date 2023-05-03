@@ -2,61 +2,73 @@
     {
         "simulation_id": "biel",
         "schedule_interval": "0 9 * * *",
+        "restart_file": true,
         "cores": 5
     },
     {
         "simulation_id": "zurich",
         "schedule_interval": "5 9 * * *",
+        "restart_file": true,
         "cores": 5
     },
     {
         "simulation_id": "geneva",
         "schedule_interval": "10 9 * * *",
+        "restart_file": true,
         "cores": 5
     },
     {
         "simulation_id": "greifensee",
         "schedule_interval": "15 9 * * *",
+        "restart_file": true,
         "cores": 5
     },
     {
         "simulation_id": "garda",
         "schedule_interval": "20 9 * * *",
+        "restart_file": false,
         "cores": 5
     },
     {
         "simulation_id": "lugano",
         "schedule_interval": "25 9 * * *",
+        "restart_file": false,
         "cores": 5
     },
     {
         "simulation_id": "murten",
         "schedule_interval": "30 9 * * *",
+        "restart_file": false,
         "cores": 5
     },
     {
         "simulation_id": "caldonazzo",
         "schedule_interval": "35 9 * * *",
+        "restart_file": false,
         "cores": 5
     },
     {
         "simulation_id": "ageri",
         "schedule_interval": "40 9 * * *",
+        "restart_file": false,
         "cores": 5
     },
     {
         "simulation_id": "joux",
         "schedule_interval": "45 9 * * *",
+        "restart_file": false,
         "cores": 5
     },
     {
         "simulation_id": "hallwil",
         "schedule_interval": "50 9 * * *",
+        "restart_file": false,
         "cores": 5
     },
     {
         "simulation_id": "stmoritz",
         "schedule_interval": "55 9 * * *",
+        "restart_file": false,
         "cores": 5
     }
 ]
