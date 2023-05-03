@@ -27,7 +27,7 @@ def get_restart(dt):
 
 
 def parse_restart(restart_file):
-    if restart_file == false:
+    if restart_file == False or restart_file == "false":
         return "-x"
     else:
         return ""
@@ -48,4 +48,3 @@ def post_notify_api(params, **kwargs):
     resp = requests.post(url, json=body)
     if resp.status_code != 200:
         raise ValueError("Failed to notify Alplakes API.")
-
