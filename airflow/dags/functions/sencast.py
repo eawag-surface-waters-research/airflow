@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta
 import configparser
 import logging
+import boto3
+import json
 import os
 
 
@@ -23,3 +25,44 @@ def write_logical_date_to_parameter_file(file, date=False, offset=0, **context):
     params['General']['end'] = end
     with open(file, "w") as f:
         params.write(f)
+
+
+def create_sencast_operational_metadata(ds, **kwargs):
+    satellites = kwargs["satellites"]
+    bucket_name = kwargs["bucket"]
+    filesystem = kwargs["filesystem"]
+    s3 = boto3.client('s3')
+    for satellite in satellites.keys():
+        tiff_keys = []
+        parameters = []
+        prefix = satellites[satellite]
+        response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
+
+        while True:
+            for obj in response['Contents']:
+                key = obj['Key']
+                if key.lower().endswith('.tif') or key.lower().endswith('.tiff'):
+                    path = key.split("/")
+                    file = path[-1]
+                    parts = file.split("_")
+                    parameter = "_".join(parts[1:-3])
+                    tiff_keys.append({"processor": parts[0], "tile": parts[-1].split(".")[0], "datetime": parts[-2],
+                                      "satellite": parts[-3], "parameter": parameter, "key": key, "pixels": 1810,
+                                      "valid_pixels": 900, "prefix": "/".join(path[0:-1]), "file": file})
+                    if parameter not in parameters:
+                        parameters.append(parameter)
+
+            if response.get('NextContinuationToken'):
+                response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix,
+                                              ContinuationToken=response['NextContinuationToken'])
+            else:
+                break
+
+        for parameter in parameters:
+            out = [{"dt": d["datetime"], "k": d["key"], "p": d["pixels"], "vp": d["valid_pixels"]}
+                   for d in tiff_keys if d['parameter'] == parameter]
+            s3.put_object(
+                Body=json.dumps(out),
+                Bucket=bucket_name,
+                Key='metadata/{}/{}.json'.format(satellite, parameter)
+            )
