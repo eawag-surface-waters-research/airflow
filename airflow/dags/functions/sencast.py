@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 import configparser
 import logging
+import random
 import boto3
 import json
 import os
@@ -48,7 +49,8 @@ def create_sencast_operational_metadata(ds, **kwargs):
                     parameter = "_".join(parts[1:-3])
                     tiff_keys.append({"processor": parts[0], "tile": parts[-1].split(".")[0], "datetime": parts[-2],
                                       "satellite": parts[-3], "parameter": parameter, "key": key, "pixels": 1810,
-                                      "valid_pixels": 900, "prefix": "/".join(path[0:-1]), "file": file})
+                                      "valid_pixels": random.randint(0, 1810), "prefix": "/".join(path[0:-1]),
+                                      "file": file, "min": 0, "max": random.randint(5, 15)})
                     if parameter not in parameters:
                         parameters.append(parameter)
 
@@ -59,8 +61,8 @@ def create_sencast_operational_metadata(ds, **kwargs):
                 break
 
         for parameter in parameters:
-            out = [{"dt": d["datetime"], "k": d["key"], "p": d["pixels"], "vp": d["valid_pixels"]}
-                   for d in tiff_keys if d['parameter'] == parameter]
+            out = [{"dt": d["datetime"], "k": d["key"], "p": d["pixels"], "vp": d["valid_pixels"], "min": d["min"],
+                    "max": d["max"]} for d in tiff_keys if d['parameter'] == parameter]
             s3.put_object(
                 Body=json.dumps(out),
                 Bucket=bucket_name,
