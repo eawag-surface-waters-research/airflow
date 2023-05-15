@@ -1,41 +1,16 @@
 from rasterio.features import geometry_mask
-from datetime import datetime, timedelta
-import configparser
-import numpy as np
 import rasterio
-import logging
+import numpy as np
 import boto3
 import json
 import os
 
 
-def write_logical_date_to_parameter_file(file, date=False, offset=0, **context):
-    logging.info('Writing logical date to Sencast parameter file {}'.format(file))
-    if date:
-        input_date = datetime.strptime(date, "%Y-%m-%d")
-    else:
-        input_date = datetime.strptime(context["ds"], "%Y-%m-%d")
-
-    input_date = input_date + timedelta(days=offset)
-
-    if not os.path.isfile(file):
-        raise RuntimeError("The parameter file could not be found: {}".format(file))
-    params = configparser.ConfigParser()
-    params.read(file)
-    start = "{}T00:00:00.000Z".format(input_date.strftime("%Y-%m-%d"))
-    end = "{}T23:59:59.999Z".format(input_date.strftime("%Y-%m-%d"))
-    params['General']['start'] = start
-    params['General']['end'] = end
-    with open(file, "w") as f:
-        params.write(f)
-
-
-def create_sencast_operational_metadata(ds, **kwargs):
+def create_sencast_operational_metadata(kwargs):
     satellites = kwargs["satellites"]
     bucket_name = kwargs["bucket"]
     filesystem = kwargs["filesystem"]
-
-    s3 = boto3.client('s3')
+    s3 = boto3.client('s3', aws_access_key_id="AKIAULR47ZJOY65WR6ER", aws_secret_access_key="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")
 
     folder = os.path.join(filesystem, "media", "remotesensing", "files")
     if not os.path.exists(folder):
@@ -73,8 +48,7 @@ def create_sencast_operational_metadata(ds, **kwargs):
                     raster = rasterio.open(local_file)
 
                     for lake in polygons["features"]:
-                        mask = geometry_mask([lake["geometry"]], out_shape=raster.shape, transform=raster.transform,
-                                             invert=True)
+                        mask = geometry_mask([lake["geometry"]], out_shape=raster.shape, transform=raster.transform, invert=True)
                         masked_data = raster.read(masked=True)
                         masked_data = masked_data[:, mask]
                         data = masked_data[:, ~masked_data[0].mask]
@@ -85,8 +59,7 @@ def create_sencast_operational_metadata(ds, **kwargs):
                             data_min = np.nanmin(valid_data).astype(np.float64)
                             data_max = np.nanmax(valid_data).astype(np.float64)
                             tiff_keys.append(
-                                {"lake": lake["properties"]["Name"], "processor": parts[0],
-                                 "tile": parts[-1].split(".")[0], "datetime": parts[-2],
+                                {"lake": lake["properties"]["Name"], "processor": parts[0], "tile": parts[-1].split(".")[0], "datetime": parts[-2],
                                  "satellite": parts[-3], "parameter": parameter, "key": key, "pixels": pixels,
                                  "valid_pixels": valid_pixels, "prefix": "/".join(path[0:-1]),
                                  "file": file, "min": data_min, "max": data_max})
@@ -110,3 +83,10 @@ def create_sencast_operational_metadata(ds, **kwargs):
                         Bucket=bucket_name,
                         Key='metadata/{}/{}_{}.json'.format(satellite, lake, parameter)
                     )
+
+input = {'bucket': 'eawagrs',
+         'satellites': {"sentinel2": "datalakes/sui/S2",
+                        "sentinel3": "datalakes/sui/S3"},
+         'filesystem': "/media/runnalja/JamesSSD/Eawag/Alplakes/filesystem"}
+
+create_sencast_operational_metadata(input)

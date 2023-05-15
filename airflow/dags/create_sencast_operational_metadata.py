@@ -1,8 +1,4 @@
-from datetime import timedelta
-
-from airflow.operators.bash import BashOperator
 from airflow.operators.python_operator import PythonOperator
-from airflow.models import Variable
 from airflow.utils.dates import days_ago
 
 from functions.email import report_failure
@@ -36,7 +32,7 @@ dag = DAG(
     'create_sencast_operational_metadata',
     default_args=default_args,
     description='Create metadata files from Sencast output bucket',
-    schedule_interval=None,
+    schedule_interval="0 4 * * *",
     catchup=False,
     tags=['sencast', 'metadata'],
 )
