@@ -69,6 +69,7 @@ run_sencast_logical = BashOperator(
     bash_command='docker run '
                  '-v {{ FILESYSTEM }}/DIAS:/DIAS '
                  '-v {{ FILESYSTEM }}/git/{{ git_name }}:/sencast '
+                 '--rm '
                  '-i {{ docker }} -e {{ environment_file }} -p datalakes_sui_S3.ini',
     on_failure_callback=report_failure,
     dag=dag,
@@ -87,6 +88,7 @@ run_sencast_14days = BashOperator(
     bash_command='docker run '
                  '-v {{ FILESYSTEM }}/DIAS:/DIAS '
                  '-v {{ FILESYSTEM }}/git/{{ git_name }}:/sencast '
+                 '--rm '
                  '-i {{ docker }} -e {{ environment_file }} -p datalakes_sui_S3.ini',
     on_failure_callback=report_failure,
     dag=dag,

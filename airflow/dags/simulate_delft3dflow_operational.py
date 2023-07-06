@@ -81,6 +81,7 @@ def create_dag(dag_id, parameters):
                      '-e AWS_ID={{ params.AWS_ID }} '
                      '-e AWS_KEY={{ params.AWS_KEY }} '
                      '-v {{ FILESYSTEM }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}:/job '
+                     '--rm '
                      '{{ docker }} '
                      '-p {{ number_of_cores(task_instance, cores) }} '
                      '-r "{{ params.restart }}{{ restart(ds) }}.000000"',

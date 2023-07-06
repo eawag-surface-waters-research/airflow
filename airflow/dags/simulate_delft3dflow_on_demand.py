@@ -88,6 +88,7 @@ run_simulation = BashOperator(
                  '-e AWS_ID={{ params.AWS_ID }} '
                  '-e AWS_KEY={{ params.AWS_KEY }} '
                  '-v {{ FILESYSTEM }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ dag_run.conf.model }}_{{ dag_run.conf.start }}_{{ dag_run.conf.end }}:/job '
+                 '--rm '
                  '{{ docker }} '
                  '-p {{ number_of_cores(task_instance, dag_run.conf.cores) }} '
                  '-r "{{ params.restart }}/{{ dag_run.conf.model }}/tri-rst.Simulation_Web_rst.{{ dag_run.conf.start }}.000000"',
