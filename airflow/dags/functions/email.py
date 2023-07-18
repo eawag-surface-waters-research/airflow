@@ -41,7 +41,7 @@ def report_failure(context):
         f'</tbody></table>'
     )
 
-    subject = f"ERROR - Eawag Airflow DAG Failure"
+    subject = f'DAG ERROR - {ti.dag_id} failed.'
     send_email = EmailOperator(task_id="report_failure", to="james.runnalls@eawag.ch", subject=subject,
                                html_content=html_content)
     send_email.execute(context)
