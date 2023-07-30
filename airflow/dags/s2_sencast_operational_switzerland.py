@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime
 
 from airflow.operators.bash import BashOperator
 from airflow.operators.python_operator import PythonOperator
@@ -13,7 +13,7 @@ from airflow import DAG
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
-    'start_date': days_ago(2),
+    'start_date': datetime(2016, 11, 1),
     'email': ['james.runnalls@eawag.ch'],
     'email_on_failure': False,
     'email_on_retry': False,
@@ -21,7 +21,7 @@ default_args = {
     # 'retries': 1,
     # 'retry_delay': timedelta(minutes=5),
     # 'pool': 'backfill',
-    # 'priority_weight': 10,
+    'priority_weight': 8,
     # 'end_date': datetime(2016, 1, 1),
     # 'wait_for_downstream': False,
     # 'sla': timedelta(hours=2),
@@ -38,6 +38,7 @@ dag = DAG(
     description='Process Sentinel 2 data for Switzerland.',
     schedule_interval="0 2 * * *",
     catchup=False,
+    max_active_runs=5,
     tags=['sencast', 'operational'],
     user_defined_macros={'docker': 'eawag/sencast:0.0.1',
                          'DIAS': '/opt/airflow/filesystem/DIAS',

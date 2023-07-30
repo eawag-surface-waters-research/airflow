@@ -24,7 +24,7 @@ def create_dag(dag_id, parameters):
         'retries': 1,
         'retry_delay': timedelta(minutes=30),
         # 'pool': 'backfill',
-        # 'priority_weight': 10,
+        'priority_weight': 10,
         # 'end_date': datetime(2016, 1, 1),
         # 'wait_for_downstream': False,
         # 'sla': timedelta(hours=2),

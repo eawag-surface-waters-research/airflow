@@ -13,7 +13,7 @@ from airflow import DAG
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
-    'start_date': datetime(2016, 4, 26),
+    'start_date': days_ago(2),
     'email': ['james.runnalls@eawag.ch'],
     'email_on_failure': False,
     'email_on_retry': False,
@@ -33,11 +33,11 @@ default_args = {
     # 'trigger_rule': 'all_success'
 }
 dag = DAG(
-    's3_sencast_operational_switzerland',
+    's3_sencast_reprocess_switzerland',
     default_args=default_args,
-    description='Process Sentinel 3 data for Switzerland.',
-    schedule_interval="0 1 * * *",
-    catchup=True,
+    description='Re-process Sentinel 3 data for Switzerland with updated metadata.',
+    schedule_interval="0 3 * * *",
+    catchup=False,
     max_active_runs=5,
     tags=['sencast', 'operational'],
     user_defined_macros={'docker': 'eawag/sencast:0.0.1',
@@ -57,16 +57,16 @@ clone_repo = BashOperator(
     dag=dag,
 )
 
-set_parameter_dates_logical = PythonOperator(
-    task_id='set_parameter_dates_logical',
+set_parameter_dates_14days = PythonOperator(
+    task_id='set_parameter_dates_14days',
     python_callable=write_logical_date_to_parameter_file,
     on_failure_callback=report_failure,
-    op_kwargs={"file": '/opt/airflow/filesystem/git/sencast/parameters/datalakes_sui_S3.ini'},
+    op_kwargs={"file": '/opt/airflow/filesystem/git/sencast/parameters/datalakes_sui_S3.ini', "offset": -14},
     dag=dag,
 )
 
-run_sencast_logical = BashOperator(
-    task_id='run_sencast_logical',
+run_sencast_14days = BashOperator(
+    task_id='run_sencast_14days',
     bash_command='docker run '
                  '-v {{ FILESYSTEM }}/DIAS:/DIAS '
                  '-v {{ FILESYSTEM }}/git/{{ git_name }}:/sencast '
@@ -76,4 +76,4 @@ run_sencast_logical = BashOperator(
     dag=dag,
 )
 
-clone_repo >> set_parameter_dates_logical >> run_sencast_logical
+clone_repo >> set_parameter_dates_14days >> run_sencast_14days
