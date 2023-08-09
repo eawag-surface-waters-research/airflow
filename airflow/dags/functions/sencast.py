@@ -94,12 +94,13 @@ def create_sencast_operational_metadata(ds, **kwargs):
                         if valid_pixels > 0:
                             data_min = np.nanmin(valid_data).astype(np.float64)
                             data_max = np.nanmax(valid_data).astype(np.float64)
+                            data_mean = np.nanmean(valid_data).astype(np.float64)
                             tiff_keys.append(
                                 {"lake": lake["properties"]["Name"], "processor": parts[0],
                                  "tile": parts[-1].split(".")[0], "datetime": parts[-2],
                                  "satellite": parts[-3], "parameter": parameter, "key": key, "pixels": pixels,
                                  "valid_pixels": valid_pixels, "prefix": "/".join(path[0:-1]),
-                                 "file": file, "min": data_min, "max": data_max})
+                                 "file": file, "min": data_min, "max": data_max, "mean": data_mean})
 
                     if parameter not in parameters:
                         parameters.append(parameter)
@@ -113,7 +114,7 @@ def create_sencast_operational_metadata(ds, **kwargs):
         for parameter in parameters:
             for lake in lakes:
                 out = [{"dt": d["datetime"], "k": d["key"], "p": d["pixels"], "vp": d["valid_pixels"], "min": d["min"],
-                        "max": d["max"]} for d in tiff_keys if d['parameter'] == parameter and d["lake"] == lake]
+                        "max": d["max"], "mean": d["mean"]} for d in tiff_keys if d['parameter'] == parameter and d["lake"] == lake]
                 if len(out) > 0:
                     s3.put_object(
                         Body=json.dumps(out),
