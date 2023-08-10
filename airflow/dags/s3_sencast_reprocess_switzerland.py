@@ -47,18 +47,19 @@ dag = DAG(
                          'git_remote': 'https://github.com/eawag-surface-waters-research/sencast.git',
                          'environment_file': 'docker.ini',
                          'date': get_two_weeks_ago,
-                         'sencast_folder_prefix': "datalakes_sui_S3_sui_",
+                         'sencast_folder_prefix': "datalakes_sui_S3_sui",
                          'api_user': "alplakes",
                          'api_server': 'eaw-alplakes2',
                          'API_PASSWORD': Variable.get("API_PASSWORD"),
-                         'api_server_folder': "/nfsmount/filesystem/media/DIAS/output_data",
+                         'api_server_folder': "/nfsmount/filesystem/DIAS/output_data",
                          'FILESYSTEM': Variable.get("FILESYSTEM")}
 )
 
 clone_repo = BashOperator(
     task_id='clone_repo',
     bash_command="mkdir -p {{ DIAS }}; mkdir -p {{ git_repos }}; cd {{ git_repos }}; "
-                 "git clone --depth 1 {{ git_remote }} || (cd {{ git_name }} ; git stash ; git pull)",
+                 "git clone --depth 1 {{ git_remote }} || "
+                 "(cd {{ git_name }} ; git config --global --add safe.directory '*' ; git stash ; git pull)",
     on_failure_callback=report_failure,
     dag=dag,
 )
@@ -84,17 +85,17 @@ run_sencast_14days = BashOperator(
 
 send_results = BashOperator(
     task_id='send_results',
-    bash_command="sshpass -p {{ API_PASSWORD }} scp -r "
-                 "-o StrictHostKeyChecking=no "
-                 "{{ DIAS }}/output_data/{{ sencast_folder_prefix }}_{{ date(ds) }}_{{ date(ds) }} "
-                 "{{ api_user }}@{{ api_server }}:{{ api_server_folder }}",
+    bash_command='f="{{ DIAS }}/output_data/{{ sencast_folder_prefix }}_{{ date(ds) }}_{{ date(ds) }}"; [ -d "$f" ] && '
+                 'sshpass -p {{ API_PASSWORD }} scp -r "$f" {{ api_user }}@{{ api_server }}:{{ api_server_folder }} || '
+                 'echo "Folder does not exist."',
     on_failure_callback=report_failure,
     dag=dag,
 )
 
 remove_results = BashOperator(
     task_id='remove_results',
-    bash_command="rm -rf {{ DIAS }}/output_data/{{ sencast_folder_prefix }}_{{ date(ds) }}_{{ date(ds) }}",
+    bash_command='f="{{ DIAS }}/output_data/{{ sencast_folder_prefix }}_{{ date(ds) }}_{{ date(ds) }}"; [ -d "$f" ] && '
+                 'rm -rf "$f" || echo "Folder does not exist."',
     on_failure_callback=report_failure,
     dag=dag,
 )

@@ -9,13 +9,8 @@ import json
 import os
 
 
-def get_date(dt):
-    run_date = datetime.strptime(dt, "%Y-%m-%d") + timedelta(days=1)
-    return run_date.strftime('%Y-%m-%d')
-
-
 def get_two_weeks_ago(dt):
-    run_date = datetime.strptime(dt, "%Y-%m-%d") - timedelta(days=13)
+    run_date = datetime.strptime(dt, "%Y-%m-%d") - timedelta(days=14)
     return run_date.strftime('%Y-%m-%d')
 
 
