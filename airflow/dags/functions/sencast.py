@@ -9,6 +9,11 @@ import json
 import os
 
 
+def get_two_weeks_ago(dt):
+    run_date = datetime.strptime(dt, "%Y-%m-%d") - timedelta(days=14)
+    return run_date.strftime('%Y-%m-%d')
+
+
 def write_logical_date_to_parameter_file(file, date=False, offset=0, **context):
     logging.info('Writing logical date to Sencast parameter file {}'.format(file))
     if date:
