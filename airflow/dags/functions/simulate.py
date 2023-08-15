@@ -55,8 +55,8 @@ def cache_simulation_data(ds, **kwargs):
     model = kwargs["model"]
     api = kwargs["api"]
     bucket = kwargs["bucket"]
-    aws_access_key_id = kwargs["aws_access_key_id"]
-    aws_secret_access_key = kwargs["aws_secret_access_key"]
+    aws_access_key_id = kwargs["AWS_ID"]
+    aws_secret_access_key = kwargs["AWS_KEY"]
     bucket_key = bucket.split(".")[0].split("//")[1]
 
     s3 = boto3.client("s3",
