@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from airflow.operators.bash import BashOperator
 from airflow.operators.python_operator import PythonOperator
@@ -17,8 +17,8 @@ default_args = {
     'email_on_failure': False,
     'email_on_retry': False,
     'queue': 'simulation',
-    # 'retries': 1,
-    # 'retry_delay': timedelta(minutes=5),
+    'retries': 1,
+    'retry_delay': timedelta(minutes=60),
     # 'pool': 'backfill',
     'priority_weight': 8,
     # 'end_date': datetime(2016, 1, 1),
