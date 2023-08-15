@@ -1,5 +1,9 @@
+import os
+import json
+import boto3
 import requests
-from datetime import datetime, timedelta
+import tempfile
+from datetime import datetime, timedelta, timezone
 from dateutil.relativedelta import relativedelta, SU
 
 
@@ -42,11 +46,59 @@ def number_of_cores(task_instance, cores):
         return cores
 
 
-def post_notify_api(params, **kwargs):
-    url = params["api"] + "/simulations/notify"
-    body = {"type": "new",
-            "model": params["model"],
-            "value": "{}_{}.nc".format(params["file"], get_last_sunday(str(kwargs['ds'])))}
-    resp = requests.post(url, json=body)
-    if resp.status_code != 200:
-        raise ValueError("Failed to notify Alplakes API.")
+def closest(lst, k):
+    return lst[min(range(len(lst)), key=lambda i: abs(lst[i]-k))]
+
+
+def cache_simulation_data(ds, **kwargs):
+    lake = kwargs["lake"]
+    model = kwargs["model"]
+    api = kwargs["api"]
+    bucket = kwargs["bucket"]
+    aws_access_key_id = kwargs["aws_access_key_id"]
+    aws_secret_access_key = kwargs["aws_secret_access_key"]
+    bucket_key = bucket.split(".")[0].split("//")[1]
+
+    s3 = boto3.client("s3",
+                      aws_access_key_id=aws_access_key_id,
+                      aws_secret_access_key=aws_secret_access_key)
+
+    response = requests.get("{}/static/website/metadata/{}.json".format(bucket, lake))
+    lake_info = response.json()
+
+    response = requests.get("{}/simulations/metadata/{}/{}".format(api, model, lake))
+    lake_metadata = response.json()
+
+    max_date = datetime.strptime(lake_metadata["end_date"], '%Y-%m-%d %H:%M').replace(tzinfo=timezone.utc)
+    start_date = max_date + timedelta(days=lake_info["customPeriod"]["start"])
+    depth = closest(lake_metadata["depths"], lake_info["depth"])
+    start = start_date.strftime("%Y%m%d%H")
+    end = max_date.strftime("%Y%m%d%H")
+
+    response = requests.get(
+        "{}/simulations/layer_alplakes/{}/{}/geometry/{}/{}/{}".format(api, model, lake, start, end, depth))
+    geometry = response.text
+
+    with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
+        temp_filename = temp_file.name
+        temp_file.write(geometry)
+    s3.upload_file(temp_filename, bucket_key, "simulations/{}/metadata/{}/geometry.txt".format(model, lake))
+    os.remove(temp_filename)
+
+    for parameter in ["temperature", "velocity"]:
+        response = requests.get(
+            "{}/simulations/layer_alplakes/{}/{}/{}/{}/{}/{}".format(api, model, lake, parameter, start, end, depth))
+        temperature = response.text
+
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
+            temp_filename = temp_file.name
+            temp_file.write(temperature)
+        s3.upload_file(temp_filename, bucket_key,
+                       "simulations/{}/data/{}/{}_{}_{}_{}.txt".format(model, lake, parameter, start, end, depth))
+        os.remove(temp_filename)
+
+    with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
+        temp_filename = temp_file.name
+        json.dump(lake_metadata, temp_file)
+    s3.upload_file(temp_filename, bucket_key, "simulations/{}/metadata/{}/metadata.json".format(model, lake))
+    os.remove(temp_filename)

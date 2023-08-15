@@ -7,7 +7,8 @@ from airflow.models import Variable
 from airflow.utils.dates import days_ago
 
 from functions.email import report_failure
-from functions.simulate import get_last_sunday, get_end_date, get_today, get_restart, number_of_cores, post_notify_api, parse_restart
+from functions.simulate import get_last_sunday, get_end_date, get_today, get_restart, number_of_cores, parse_restart, \
+    cache_simulation_data
 
 from airflow import DAG
 
@@ -61,7 +62,8 @@ def create_dag(dag_id, parameters):
                              'api_user': "alplakes",
                              'api_server': 'eaw-alplakes2',
                              'API_PASSWORD': Variable.get("API_PASSWORD"),
-                             'api_server_folder': "/nfsmount/filesystem/media/simulations/delft3d-flow/results/{}".format(parameters["simulation_id"]),
+                             'api_server_folder': "/nfsmount/filesystem/media/simulations/delft3d-flow/results/{}".format(
+                                 parameters["simulation_id"]),
                              'number_of_cores': number_of_cores}
     )
 
@@ -85,10 +87,11 @@ def create_dag(dag_id, parameters):
                      '{{ docker }} '
                      '-p {{ number_of_cores(task_instance, cores) }} '
                      '-r "{{ params.restart }}{{ restart(ds) }}.000000"',
-        params={'restart': 's3://alplakes-eawag/simulations/delft3d-flow/restart-files/{}/tri-rst.Simulation_Web_rst.'.format(
-                    parameters["simulation_id"]),
-                'AWS_ID': Variable.get("AWS_ACCESS_KEY_ID"),
-                'AWS_KEY': Variable.get("AWS_SECRET_ACCESS_KEY")},
+        params={
+            'restart': 's3://alplakes-eawag/simulations/delft3d-flow/restart-files/{}/tri-rst.Simulation_Web_rst.'.format(
+                parameters["simulation_id"]),
+            'AWS_ID': Variable.get("AWS_ACCESS_KEY_ID"),
+            'AWS_KEY': Variable.get("AWS_SECRET_ACCESS_KEY")},
         on_failure_callback=report_failure,
         retries=2,
         retry_delay=timedelta(minutes=2),
@@ -127,7 +130,20 @@ def create_dag(dag_id, parameters):
         dag=dag,
     )
 
-    prepare_simulation_files >> run_simulation >> standardise_simulation_output >> calculate_parameters >> send_results >> remove_results
+    cache_data = PythonOperator(
+        task_id='cache_data',
+        python_callable=cache_simulation_data,
+        op_kwargs={"lake": parameters["simulation_id"],
+                   "model": "delft3d-flow",
+                   "bucket": "https://alplakes-eawag.s3.eu-central-1.amazonaws.com",
+                   "api": "https://alplakes-api.eawag.ch",
+                   'AWS_ID': Variable.get("AWS_ACCESS_KEY_ID"),
+                   'AWS_KEY': Variable.get("AWS_SECRET_ACCESS_KEY")},
+        on_failure_callback=report_failure,
+        dag=dag,
+    )
+
+    prepare_simulation_files >> run_simulation >> standardise_simulation_output >> calculate_parameters >> send_results >> remove_results >> cache_data
 
     return dag
 

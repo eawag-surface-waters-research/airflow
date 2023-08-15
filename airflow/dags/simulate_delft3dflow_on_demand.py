@@ -7,7 +7,7 @@ from airflow.models import Variable
 from airflow.utils.dates import days_ago
 
 from functions.email import report_failure
-from functions.simulate import get_last_sunday, get_end_date, get_today, get_restart, number_of_cores, post_notify_api, parse_restart
+from functions.simulate import get_last_sunday, get_end_date, get_today, get_restart, number_of_cores, parse_restart
 
 from airflow import DAG
 
