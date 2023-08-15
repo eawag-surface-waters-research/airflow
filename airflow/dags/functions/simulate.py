@@ -34,10 +34,12 @@ def parse_restart(restart_file):
 
 
 def number_of_cores(task_instance, cores):
-    if task_instance.try_number == task_instance.retries + 1:
+    if task_instance.try_number == task_instance.max_tries:
         return 1
+    elif task_instance.try_number > 1:
+        return cores + 1
     else:
-        return max(1, cores - task_instance.try_number + 1)
+        return cores
 
 
 def post_notify_api(params, **kwargs):

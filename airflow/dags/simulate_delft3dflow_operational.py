@@ -90,7 +90,7 @@ def create_dag(dag_id, parameters):
                 'AWS_ID': Variable.get("AWS_ACCESS_KEY_ID"),
                 'AWS_KEY': Variable.get("AWS_SECRET_ACCESS_KEY")},
         on_failure_callback=report_failure,
-        retries=4,
+        retries=2,
         retry_delay=timedelta(minutes=2),
         dag=dag,
     )
