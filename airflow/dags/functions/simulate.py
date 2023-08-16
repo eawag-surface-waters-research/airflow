@@ -38,7 +38,7 @@ def parse_restart(restart_file):
 
 
 def number_of_cores(task_instance, cores):
-    if task_instance.try_number == task_instance.max_tries:
+    if task_instance.try_number == task_instance.max_tries + 1:
         return 1
     elif task_instance.try_number > 1:
         return cores + 1
