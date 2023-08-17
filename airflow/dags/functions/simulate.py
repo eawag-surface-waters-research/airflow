@@ -37,6 +37,13 @@ def parse_restart(restart_file):
         return ""
 
 
+def format_depth(number):
+    string = str(number)
+    if "." not in string:
+        return string + ".0"
+    return string
+
+
 def number_of_cores(task_instance, cores):
     if task_instance.try_number == task_instance.max_tries + 1:
         return 1
@@ -47,7 +54,7 @@ def number_of_cores(task_instance, cores):
 
 
 def closest(lst, k):
-    return lst[min(range(len(lst)), key=lambda i: abs(lst[i]-k))]
+    return lst[min(range(len(lst)), key=lambda i: abs(lst[i] - k))]
 
 
 def cache_simulation_data(ds, **kwargs):
@@ -87,14 +94,14 @@ def cache_simulation_data(ds, **kwargs):
 
     for parameter in ["temperature", "velocity"]:
         response = requests.get(
-            "{}/simulations/layer_alplakes/{}/{}/{}/{}/{}/{}".format(api, model, lake, parameter, start, end, depth))
+            "{}/simulations/layer_alplakes/{}/{}/{}/{}/{}/{}".format(api, model, lake, parameter, start, end, format_depth(depth)))
         temperature = response.text
 
         with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
             temp_filename = temp_file.name
             temp_file.write(temperature)
         s3.upload_file(temp_filename, bucket_key,
-                       "simulations/{}/data/{}/{}_{}_{}_{}.txt".format(model, lake, parameter, start, end, depth))
+                       "simulations/{}/data/{}/{}_{}_{}_{}.txt".format(model, lake, parameter, start, end, format_depth(depth)))
         os.remove(temp_filename)
 
     with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
