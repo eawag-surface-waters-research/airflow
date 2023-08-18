@@ -3,6 +3,7 @@ import json
 import boto3
 import requests
 import tempfile
+import numpy as np
 from datetime import datetime, timedelta, timezone
 from dateutil.relativedelta import relativedelta, SU
 
@@ -108,4 +109,30 @@ def cache_simulation_data(ds, **kwargs):
         temp_filename = temp_file.name
         json.dump(lake_metadata, temp_file)
     s3.upload_file(temp_filename, bucket_key, "simulations/{}/metadata/{}/metadata.json".format(model, lake))
+    os.remove(temp_filename)
+
+    response = requests.get("{}/static/website/metadata/list.json".format(bucket))
+    lake_list = response.json()
+
+    start = datetime.now().replace(tzinfo=timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(
+        days=1)
+    forecast = {}
+    for lake in lake_list:
+        response = requests.get("{}/simulations/metadata/{}/{}".format(api, model, lake["key"]))
+        lake_metadata = response.json()
+        response = requests.get("{}/static/website/metadata/{}.json".format(bucket, lake["key"]))
+        lake_info = response.json()
+        end = datetime.strptime(lake_metadata["end_date"] + ":00+00:00", '%Y-%m-%d %H:%M:%S%z')
+        response = requests.get(
+            "{}/simulations/layer/average_temperature/{}/{}/{}/{}/{}".format(api, model, lake["key"],
+                                                                             start.strftime("%Y%m%d%H%M"),
+                                                                             end.strftime("%Y%m%d%H%M"),
+                                                                             lake_info["depth"]))
+        data = response.json()
+        forecast[lake["key"]] = {"date": list(np.array(data["date"]) * 1000), "value": data["temperature"]}
+
+    with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
+        temp_filename = temp_file.name
+        json.dump(forecast, temp_file)
+    s3.upload_file(temp_filename, bucket_key, "simulations/forecast.json")
     os.remove(temp_filename)
