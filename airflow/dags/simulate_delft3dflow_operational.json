@@ -3,7 +3,7 @@
         "simulation_id": "biel",
         "schedule_interval": "0 9 * * *",
         "restart_file": true,
-        "cores": 5
+        "cores": 6
     },
     {
         "simulation_id": "zurich",
@@ -15,7 +15,7 @@
         "simulation_id": "geneva",
         "schedule_interval": "10 9 * * *",
         "restart_file": true,
-        "cores": 5
+        "cores": 4
     },
     {
         "simulation_id": "greifensee",
@@ -27,7 +27,7 @@
         "simulation_id": "garda",
         "schedule_interval": "20 9 * * *",
         "restart_file": true,
-        "cores": 5
+        "cores": 6
     },
     {
         "simulation_id": "lugano",
