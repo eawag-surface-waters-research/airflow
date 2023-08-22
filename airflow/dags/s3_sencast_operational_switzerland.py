@@ -12,7 +12,7 @@ from airflow import DAG
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
-    'start_date': datetime(2023, 1, 1),
+    'start_date': datetime(2022, 11, 1),
     # 'start_date': datetime(2016, 4, 26),
     'email': ['james.runnalls@eawag.ch'],
     'email_on_failure': False,
