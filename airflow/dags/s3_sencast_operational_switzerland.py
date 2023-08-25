@@ -37,7 +37,7 @@ dag = DAG(
     description='Process Sentinel 3 data for Switzerland.',
     schedule_interval="0 1 * * *",
     catchup=True,
-    max_active_runs=2,
+    max_active_runs=10,
     tags=['sencast', 'operational'],
     user_defined_macros={'docker': 'eawag/sencast:0.0.1',
                          'DIAS': '/opt/airflow/filesystem/DIAS',
