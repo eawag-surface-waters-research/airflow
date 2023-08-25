@@ -83,6 +83,11 @@ DAGS can complete successfully.
 1. `docker pull eawag/delft3d-flow:6.02.10.142612`
 2. `docker pull eawag/sencast:0.0.1`
 
+#### Sencast
+
+Sencast requires an environment file. This needs to be manually added to the server once the first Sencast job has been 
+run and the repository has been cloned.
+
 ### 4. Launch Services
 
 #### Production Environment
