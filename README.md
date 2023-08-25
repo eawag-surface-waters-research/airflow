@@ -1,4 +1,5 @@
-# Eawag Workflow Automation
+# Airflow
+Eawag Workflow Automation
 
 [![License: MIT][mit-by-shield]][mit-by] ![Python][python-by-shield]
 
@@ -8,10 +9,10 @@ Workflows are defined as DAGS ([what is a DAG?](https://airflow.apache.org/docs/
 Example workflows are as follows:
 
 - Downloading COSMO data from MeteoSwiss `airflow/dags/download_meteoswiss_cosmo.py`
-- Downloading Hydrodata from BAFU `airflow/dags/download_bafu_hydrodata.py`
-- Delft3D Simulation of Greifensee `airflow/dags/simulate_delft3dflow_operational_greifensee.py`
-
-This is planned to be expanded to a number of projects in the department including operational runs of Sencast and Simstrat.
+- Downloading hydrodata from BAFU `airflow/dags/download_bafu_hydrodata.py`
+- Delft3D simulation of lakes `airflow/dags/simulate_delft3dflow_operational.py`
+[simulate_delft3dflow_operational.py](airflow%2Fdags%2Fsimulate_delft3dflow_operational.py)
+- Sencast processing of Sentinel 3 images `airflow/dags/s3_sencast_operational_switzerland`
 
 A web portal for managing the workflows is available at `http://eaw-alplakes2:8080` for users connected to the Eawag VPN.
 
@@ -57,6 +58,10 @@ The `keys` folder will be mounted to the docker instance at `/opt/airflow/keys`.
 
 Upload your keys to the server. There is often issues with permissions, suggested is `chmod -R 777 keys`, `chmod 700 keys/id_rsa`
 
+DAGS requiring ssh keys:
+
+1. `download_bafu_hydrodata.py` requires `keys/bafu/id_rsa`
+
 #### Auto update repo
 
 If you want to auto pull any changes from the git repository. Make `update.sh` executable and add it to the crontab.
@@ -70,6 +75,13 @@ crontab -e
 0-59/5 * * * * /home/eawag.wroot.emp-eaw.ch/runnalja/airflow/update.sh
 ```
 
+#### Additional docker images
+
+Certain DAGS require additional docker images in order to run. They need to be pulled to the **worker node** before these 
+DAGS can complete successfully.
+
+1. `docker pull eawag/delft3d-flow:6.02.10.142612`
+2. `docker pull eawag/sencast:0.0.1`
 
 ### 4. Launch Services
 
@@ -136,6 +148,16 @@ They will then be picked up automatically by the system. Best practice for addin
 - Create a new branch `git checkout -b newbranchname`
 - Add your new DAG and test it
 - Commit your changes and create a pull request to the master branch
+
+## Backfill jobs
+
+In order to backfill jobs in the past the Airflow [command line](https://airflow.apache.org/docs/apache-airflow/stable/cli-and-env-variables-ref.html#dags) can be utilised.
+
+1. Run `docker ps` to get the "CONTAINER ID" of the `airflow-airflow-scheduler`
+2. Enter the scheduler `docker exec -it 'container-id' bash`
+3. Run `nohup airflow dags backfill -s YYYY-MM-DD -e YYYY-MM-DD dag_id &`
+
+The `nohup ... &` syntax allows you close the terminal and keep the job running.
 
 [mit-by]: https://opensource.org/licenses/MIT
 [mit-by-shield]: https://img.shields.io/badge/License-MIT-g.svg
