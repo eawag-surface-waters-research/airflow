@@ -12,8 +12,7 @@ from airflow import DAG
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
-    'start_date': datetime(2022, 11, 1),
-    # 'start_date': datetime(2016, 4, 26),
+    'start_date': datetime(2016, 4, 26),
     'email': ['james.runnalls@eawag.ch'],
     'email_on_failure': False,
     'email_on_retry': False,
@@ -38,7 +37,7 @@ dag = DAG(
     description='Process Sentinel 3 data for Switzerland.',
     schedule_interval="0 1 * * *",
     catchup=True,
-    max_active_runs=5,
+    max_active_runs=2,
     tags=['sencast', 'operational'],
     user_defined_macros={'docker': 'eawag/sencast:0.0.1',
                          'DIAS': '/opt/airflow/filesystem/DIAS',
