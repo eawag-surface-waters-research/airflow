@@ -98,17 +98,10 @@ def create_dag(dag_id, parameters):
         dag=dag,
     )
 
-    standardise_simulation_output = BashOperator(
-        task_id='standardise_simulation_output',
+    postprocess_simulation_output = BashOperator(
+        task_id='postprocess_simulation_output',
         bash_command="cd {{ filesystem }}/git/{{ simulation_repo_name }};"
                      "python src/postprocess.py -f {{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}",
-        on_failure_callback=report_failure,
-        dag=dag,
-    )
-
-    calculate_parameters = BashOperator(
-        task_id='calculate_parameters',
-        bash_command="",
         on_failure_callback=report_failure,
         dag=dag,
     )
@@ -143,7 +136,7 @@ def create_dag(dag_id, parameters):
         dag=dag,
     )
 
-    prepare_simulation_files >> run_simulation >> standardise_simulation_output >> calculate_parameters >> send_results >> remove_results >> cache_data
+    prepare_simulation_files >> run_simulation >> postprocess_simulation_output >> send_results >> remove_results >> cache_data
 
     return dag
 
