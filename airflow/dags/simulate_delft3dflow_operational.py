@@ -101,7 +101,7 @@ def create_dag(dag_id, parameters):
     postprocess_simulation_output = BashOperator(
         task_id='postprocess_simulation_output',
         bash_command="cd {{ filesystem }}/git/{{ simulation_repo_name }};"
-                     "python src/postprocess.py -f {{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}",
+                     "python src/postprocess.py -f {{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }} -d {{ docker }}",
         on_failure_callback=report_failure,
         dag=dag,
     )
