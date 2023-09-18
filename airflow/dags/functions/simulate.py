@@ -118,18 +118,21 @@ def cache_simulation_data(ds, **kwargs):
         days=1)
     forecast = {}
     for lake in lake_list:
-        response = requests.get("{}/simulations/metadata/{}/{}".format(api, model, lake["key"]))
-        lake_metadata = response.json()
-        response = requests.get("{}/static/website/metadata/{}.json".format(bucket, lake["key"]))
-        lake_info = response.json()
-        end = datetime.strptime(lake_metadata["end_date"] + ":00+00:00", '%Y-%m-%d %H:%M:%S%z')
-        response = requests.get(
-            "{}/simulations/layer/average_temperature/{}/{}/{}/{}/{}".format(api, model, lake["key"],
-                                                                             start.strftime("%Y%m%d%H%M"),
-                                                                             end.strftime("%Y%m%d%H%M"),
-                                                                             lake_info["depth"]))
-        data = response.json()
-        forecast[lake["key"]] = {"date": list(np.array(data["date"]) * 1000), "value": data["temperature"]}
+        try:
+            response = requests.get("{}/simulations/metadata/{}/{}".format(api, model, lake["key"]))
+            lake_metadata = response.json()
+            response = requests.get("{}/static/website/metadata/{}.json".format(bucket, lake["key"]))
+            lake_info = response.json()
+            end = datetime.strptime(lake_metadata["end_date"] + ":00+00:00", '%Y-%m-%d %H:%M:%S%z')
+            response = requests.get(
+                "{}/simulations/layer/average_temperature/{}/{}/{}/{}/{}".format(api, model, lake["key"],
+                                                                                 start.strftime("%Y%m%d%H%M"),
+                                                                                 end.strftime("%Y%m%d%H%M"),
+                                                                                 lake_info["depth"]))
+            data = response.json()
+            forecast[lake["key"]] = {"date": list(np.array(data["date"]) * 1000), "value": data["temperature"]}
+        except:
+            print("Failed for Lake {}".format(lake["key"]))
 
     with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
         temp_filename = temp_file.name
