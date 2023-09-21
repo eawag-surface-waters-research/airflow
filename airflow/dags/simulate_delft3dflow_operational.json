@@ -69,6 +69,6 @@
         "simulation_id": "stmoritz",
         "schedule_interval": "55 9 * * *",
         "restart_file": true,
-        "cores": 5
+        "cores": 1
     }
 ]
