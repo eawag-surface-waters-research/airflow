@@ -48,6 +48,7 @@ dag = DAG(
     catchup=False,
     tags=['simulation', 'backfill'],
     user_defined_macros={'filesystem': '/opt/airflow/filesystem',
+                         'FILESYSTEM': Variable.get("FILESYSTEM"),
                          'docker': 'eawag/delft3d-flow:6.02.10.142612',
                          'simulation_repo_name': "alplakes-simulations",
                          'simulation_repo_https': "https://github.com/eawag-surface-waters-research/alplakes-simulations.git",
@@ -62,9 +63,12 @@ run_backfill = BashOperator(
     task_id='run_backfill',
     bash_command="mkdir -p {{ filesystem }}/git;"
                  "cd {{ filesystem }}/git;"
-                 "git clone {{ simulation_repo_https }} && cd {{ simulation_repo_name }} || cd {{ simulation_repo_name }} && git stash && git pull;"
-                 "python src/backfill.py -m delft3d-flow/{{ dag_run.conf.model }} -d {{ docker }} -c {{ dag_run.conf.cores }} "
-                 "-p {{ dag_run.conf.profile }} -i {{ AWS_ID }} -k {{ AWS_KEY }} -w {{ API_PASSWORD }} -u {{ api_user }} -v {{ api_server }}",
+                 "git clone {{ simulation_repo_https }} && cd {{ simulation_repo_name }} || "
+                 "cd {{ simulation_repo_name }} && git stash && git pull;"
+                 "python src/backfill.py -m delft3d-flow/{{ dag_run.conf.model }} -d {{ docker }} "
+                 "-c {{ dag_run.conf.cores }} -p {{ dag_run.conf.profile }} -i {{ AWS_ID }} -k {{ AWS_KEY }} "
+                 "-w {{ API_PASSWORD }} -u {{ api_user }} -v {{ api_server }} "
+                 "-f {{ FILESYSTEM }}/git/{{ simulation_repo_name }}",
     on_failure_callback=report_failure,
     dag=dag,
 )
