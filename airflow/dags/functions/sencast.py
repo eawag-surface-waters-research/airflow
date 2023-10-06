@@ -8,6 +8,8 @@ import boto3
 import json
 import os
 
+logging.getLogger('boto3').setLevel(logging.CRITICAL)
+
 
 def get_two_weeks_ago(dt):
     run_date = datetime.strptime(dt, "%Y-%m-%d") - timedelta(days=14)
@@ -62,6 +64,7 @@ def create_sencast_operational_metadata(ds, **kwargs):
         response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
 
         while True:
+            print("Processing {} images.".format(len(response['Contents'])))
             for obj in response['Contents']:
                 key = obj['Key']
                 if key.lower().endswith('.tif') or key.lower().endswith('.tiff'):
@@ -71,34 +74,40 @@ def create_sencast_operational_metadata(ds, **kwargs):
                     parameter = "_".join(parts[1:-3])
 
                     local_file = os.path.join(folder, file)
+
+                    print("Processing: {}".format(file))
+
                     if not os.path.isfile(local_file):
-                        print("Downloading")
+                        print("Downloading.")
                         s3.download_file(bucket_name, key, local_file)
 
-                    raster = rasterio.open(local_file)
+                    try:
+                        raster = rasterio.open(local_file)
 
-                    for lake in polygons["features"]:
-                        mask = geometry_mask([lake["geometry"]], out_shape=raster.shape, transform=raster.transform,
-                                             invert=True)
-                        masked_data = raster.read(masked=True)
-                        masked_data = masked_data[:, mask]
-                        data = masked_data[:, ~masked_data[0].mask]
-                        pixels = masked_data[0].size
-                        valid_data = data[0, data[1] == 0.0]
-                        valid_pixels = len(valid_data)
-                        if valid_pixels > 0:
-                            data_min = np.nanmin(valid_data).astype(np.float64)
-                            data_max = np.nanmax(valid_data).astype(np.float64)
-                            data_mean = np.nanmean(valid_data).astype(np.float64)
-                            tiff_keys.append(
-                                {"lake": lake["properties"]["Name"], "processor": parts[0],
-                                 "tile": parts[-1].split(".")[0], "datetime": parts[-2],
-                                 "satellite": parts[-3], "parameter": parameter, "key": key, "pixels": pixels,
-                                 "valid_pixels": valid_pixels, "prefix": "/".join(path[0:-1]),
-                                 "file": file, "min": data_min, "max": data_max, "mean": data_mean})
+                        for lake in polygons["features"]:
+                            mask = geometry_mask([lake["geometry"]], out_shape=raster.shape, transform=raster.transform,
+                                                 invert=True)
+                            masked_data = raster.read(masked=True)
+                            masked_data = masked_data[:, mask]
+                            data = masked_data[:, ~masked_data[0].mask]
+                            pixels = masked_data[0].size
+                            valid_data = data[0, data[1] == 0.0]
+                            valid_pixels = len(valid_data)
+                            if valid_pixels > 0:
+                                data_min = np.nanmin(valid_data).astype(np.float64)
+                                data_max = np.nanmax(valid_data).astype(np.float64)
+                                data_mean = np.nanmean(valid_data).astype(np.float64)
+                                tiff_keys.append(
+                                    {"lake": lake["properties"]["Name"], "processor": parts[0],
+                                     "tile": parts[-1].split(".")[0], "datetime": parts[-2],
+                                     "satellite": parts[-3], "parameter": parameter, "key": key, "pixels": pixels,
+                                     "valid_pixels": valid_pixels, "prefix": "/".join(path[0:-1]),
+                                     "file": file, "min": data_min, "max": data_max, "mean": data_mean})
 
-                    if parameter not in parameters:
-                        parameters.append(parameter)
+                        if parameter not in parameters:
+                            parameters.append(parameter)
+                    except:
+                        print("FAILED.")
 
             if response.get('NextContinuationToken'):
                 response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix,
