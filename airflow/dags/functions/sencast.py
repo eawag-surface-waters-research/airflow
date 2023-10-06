@@ -8,7 +8,8 @@ import boto3
 import json
 import os
 
-logging.getLogger('boto3').setLevel(logging.CRITICAL)
+logging.getLogger('boto3').setLevel(logging.ERROR)
+logging.getLogger('botocore').setLevel(logging.ERROR)
 
 
 def get_two_weeks_ago(dt):
@@ -62,6 +63,12 @@ def create_sencast_operational_metadata(ds, **kwargs):
         parameters = []
         prefix = satellites[satellite]
         response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
+        tiff_file = os.path.join(folder, "{}_tiff_keys.json".format(satellite))
+
+        if os.path.isfile(tiff_file):
+            print("Reading from existing file {}".format("{}_tiff_keys.json".format(satellite)))
+            with open(tiff_file, 'r') as f:
+                tiff_keys = json.load(f)
 
         while True:
             print("Processing {} images.".format(len(response['Contents'])))
@@ -73,13 +80,18 @@ def create_sencast_operational_metadata(ds, **kwargs):
                     parts = file.split("_")
                     parameter = "_".join(parts[1:-3])
 
-                    local_file = os.path.join(folder, file)
+                    if parameter not in parameters:
+                        parameters.append(parameter)
 
                     print("Processing: {}".format(file))
-
+                    local_file = os.path.join(folder, file)
                     if not os.path.isfile(local_file):
                         print("Downloading.")
                         s3.download_file(bucket_name, key, local_file)
+
+                    if any(d.get("key") == key for d in tiff_keys):
+                        print("Already in tiff_keys. Skipping.")
+                        continue
 
                     try:
                         raster = rasterio.open(local_file)
@@ -103,9 +115,6 @@ def create_sencast_operational_metadata(ds, **kwargs):
                                      "satellite": parts[-3], "parameter": parameter, "key": key, "pixels": pixels,
                                      "valid_pixels": valid_pixels, "prefix": "/".join(path[0:-1]),
                                      "file": file, "min": data_min, "max": data_max, "mean": data_mean})
-
-                        if parameter not in parameters:
-                            parameters.append(parameter)
                     except:
                         print("FAILED.")
 
@@ -114,6 +123,9 @@ def create_sencast_operational_metadata(ds, **kwargs):
                                               ContinuationToken=response['NextContinuationToken'])
             else:
                 break
+
+        with open(os.path.join(folder, "{}_tiff_keys.json".format(satellite)), "w") as f:
+            json.dump(tiff_keys, f)
 
         for parameter in parameters:
             for lake in lakes:
