@@ -42,6 +42,7 @@ def create_sencast_operational_metadata(ds, **kwargs):
     satellites = kwargs["satellites"]
     bucket_name = kwargs["bucket"]
     filesystem = kwargs["filesystem"]
+    failed = []
 
     s3 = boto3.client('s3')
 
@@ -116,6 +117,7 @@ def create_sencast_operational_metadata(ds, **kwargs):
                                      "valid_pixels": valid_pixels, "prefix": "/".join(path[0:-1]),
                                      "file": file, "min": data_min, "max": data_max, "mean": data_mean})
                     except:
+                        failed.append(file)
                         print("FAILED.")
 
             if response.get('NextContinuationToken'):
@@ -137,3 +139,7 @@ def create_sencast_operational_metadata(ds, **kwargs):
                         Bucket=bucket_name,
                         Key='metadata/{}/{}_{}.json'.format(satellite, lake, parameter)
                     )
+
+        print("Operation complete, failed for the following files:")
+        for fail in failed:
+            print("   {}".format(fail))
