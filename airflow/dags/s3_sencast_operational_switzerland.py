@@ -45,7 +45,8 @@ dag = DAG(
                          'git_name': 'sencast',
                          'git_remote': 'https://github.com/eawag-surface-waters-research/sencast.git',
                          'environment_file': 'docker.ini',
-                         'sencast_folder_prefix': "datalakes_sui_S3_sui",
+                         'wkt': "sui",
+                         'prefix': "datalakes_sui_S3",
                          'api_user': "alplakes",
                          'api_server': 'eaw-alplakes2',
                          'API_PASSWORD': Variable.get("API_PASSWORD"),
@@ -76,14 +77,14 @@ run_sencast_logical = BashOperator(
                  '-v {{ FILESYSTEM }}/DIAS:/DIAS '
                  '-v {{ FILESYSTEM }}/git/{{ git_name }}:/sencast '
                  '--rm '
-                 '-i {{ docker }} -e {{ environment_file }} -p datalakes_sui_S3.ini',
+                 '-i {{ docker }} -e {{ environment_file }} -p {{ prefix }}_{{ ds }}.ini',
     on_failure_callback=report_failure,
     dag=dag,
 )
 
 send_results = BashOperator(
     task_id='send_results',
-    bash_command='f="{{ DIAS }}/output_data/{{ sencast_folder_prefix }}_{{ ds }}_{{ ds }}"; [ -d "$f" ] && '
+    bash_command='f="{{ DIAS }}/output_data/{{ prefix }}_{{ ds }}_{{ wkt }}_{{ ds }}_{{ ds }}"; [ -d "$f" ] && '
                  'sshpass -p {{ API_PASSWORD }} scp -r "$f" {{ api_user }}@{{ api_server }}:{{ api_server_folder }} || '
                  'echo "Folder does not exist."',
     on_failure_callback=report_failure,
@@ -92,7 +93,7 @@ send_results = BashOperator(
 
 remove_results = BashOperator(
     task_id='remove_results',
-    bash_command='f="{{ DIAS }}/output_data/{{ sencast_folder_prefix }}_{{ ds }}_{{ ds }}"; [ -d "$f" ] && '
+    bash_command='f="{{ DIAS }}/output_data/{{ prefix }}_{{ ds }}_{{ wkt }}_{{ ds }}_{{ ds }}"; [ -d "$f" ] && '
                  'rm -rf "$f" || echo "Folder does not exist."',
     on_failure_callback=report_failure,
     dag=dag,
