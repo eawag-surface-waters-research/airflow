@@ -17,7 +17,7 @@ default_args = {
     'email_on_retry': False,
     'queue': 'api',
     'retries': 2,
-    'retry_delay': timedelta(minutes=10),
+    'retry_delay': timedelta(minutes=60),
     # 'pool': 'backfill',
     'priority_weight': 20,
     # 'end_date': datetime(2016, 1, 1),
