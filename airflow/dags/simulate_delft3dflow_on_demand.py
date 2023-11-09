@@ -55,7 +55,7 @@ dag = DAG(
                          'simulation_folder_prefix': 'eawag_delft3dflow60210142612_delft3dflow',
                          'bucket': 'alplakes-eawag',
                          'parse_profile': parse_profile,
-                         'api': "http://172.17.0.1:8000", # Remote: http://eaw-alplakes2:8000, Local: http://172.17.0.1:8000
+                         'api': "http://eaw-alplakes2:8000", # Remote: http://eaw-alplakes2:8000, Local: http://172.17.0.1:8000
                          'simulation_repo_name': "alplakes-simulations",
                          'simulation_repo_https': "https://github.com/eawag-surface-waters-research/alplakes-simulations.git",
                          'api_user': "alplakes",
