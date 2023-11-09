@@ -20,6 +20,13 @@ def get_end_date(dt):
     return bd.strftime('%Y%m%d')
 
 
+def parse_profile(profile):
+    if profile == False or profile == "false":
+        return ""
+    else:
+        return "-p {}".format(profile)
+
+
 def get_today(dt):
     today = datetime.strptime(dt, "%Y-%m-%d") + timedelta(days=1)
     return today.strftime('%Y%m%d')
@@ -29,13 +36,6 @@ def get_restart(dt):
     today = datetime.strptime(dt, "%Y-%m-%d") + timedelta(days=1)
     bd = today + relativedelta(weekday=SU(-1)) + timedelta(days=7)
     return bd.strftime('%Y%m%d')
-
-
-def parse_restart(restart_file):
-    if restart_file == False or restart_file == "false":
-        return "-x"
-    else:
-        return ""
 
 
 def format_depth(number):
@@ -139,3 +139,36 @@ def cache_simulation_data(ds, **kwargs):
         json.dump(forecast, temp_file)
     s3.upload_file(temp_filename, bucket_key, "simulations/forecast.json")
     os.remove(temp_filename)
+
+
+def upload_restart_files(ds, **kwargs):
+    lake = kwargs['dag_run'].conf.get('lake')
+    start = kwargs['dag_run'].conf.get('start')
+    end = kwargs['dag_run'].conf.get('end')
+    model = kwargs["model"]
+    bucket = kwargs["bucket"]
+    restart = kwargs["restart"]
+    aws_access_key_id = kwargs["AWS_ID"]
+    aws_secret_access_key = kwargs["AWS_KEY"]
+
+    s3 = boto3.client("s3",
+                      aws_access_key_id=aws_access_key_id,
+                      aws_secret_access_key=aws_secret_access_key)
+
+    folder = "{}/git/{}/runs/{}_{}_{}_{}".format(kwargs["filesystem"],
+                                                 kwargs["simulation_repo_name"],
+                                                 kwargs["simulation_folder_prefix"],
+                                                 lake, start, end)
+
+    s = datetime.strptime(start, "%Y%m%d") + relativedelta(weekday=SU(-1))
+    e = datetime.strptime(end, "%Y%m%d")
+    i = 0
+    while s < e and i < 1000:
+        path = os.path.join(folder, "tri-rst.Simulation_Web.{}.000000".format(s.strftime('%Y%m%d')))
+        if os.path.isfile(path):
+            print("Uploading restart file: {}".format(path))
+            s3.upload_file(path, bucket, restart.format(lake, s.strftime('%Y%m%d')))
+        else:
+            print("Cannot locate restart file: {}".format(path))
+        s = s + relativedelta(days=7)
+        i = i + 1
