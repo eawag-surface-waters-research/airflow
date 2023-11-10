@@ -61,7 +61,7 @@ dag = DAG(
                          'api_user': "alplakes",
                          'api_server': 'eaw-alplakes2',
                          'API_PASSWORD': Variable.get("API_PASSWORD"),
-                         'api_server_folder': "/nfsmount/filesystem/media/simulations/delft3d-flow/results/",
+                         'api_server_folder': "/nfsmount/filesystem/media/simulations/delft3d-flow/results",
                          }
 )
 
