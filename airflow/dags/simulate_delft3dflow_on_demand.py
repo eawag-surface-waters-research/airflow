@@ -28,7 +28,7 @@ default_args = {
     'email_on_failure': False,
     'email_on_retry': False,
     'queue': 'simulation',
-    'retries': None,
+    'retries': 0,
     'retry_delay': timedelta(minutes=30),
     # 'pool': 'backfill',
     'priority_weight': 5,
