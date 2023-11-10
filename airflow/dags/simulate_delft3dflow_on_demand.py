@@ -61,7 +61,7 @@ dag = DAG(
                          'api_user': "alplakes",
                          'api_server': 'eaw-alplakes2',
                          'API_PASSWORD': Variable.get("API_PASSWORD"),
-                         'api_server_folder': "/nfsmount/filesystem/media/simulations/delft3d-flow/results",
+                         'api_server_folder': "/nfsmount/filesystem/media/simulations/delft3d-flow/results_reprocess",
                          }
 )
 
@@ -115,7 +115,7 @@ send_results = BashOperator(
         bash_command="sshpass -p {{ API_PASSWORD }} scp -r "
                      "-o StrictHostKeyChecking=no "
                      "{{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ dag_run.conf.lake }}_{{ dag_run.conf.start }}_{{ dag_run.conf.end }}/postprocess/* "
-                     "{{ api_user }}@{{ api_server }}:{{ api_server_folder }}/{{ dag_run.conf.lake }}_new",
+                     "{{ api_user }}@{{ api_server }}:{{ api_server_folder }}/{{ dag_run.conf.lake }}",
         on_failure_callback=report_failure,
         dag=dag,
     )
