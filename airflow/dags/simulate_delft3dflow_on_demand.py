@@ -101,7 +101,7 @@ process_restart_files = PythonOperator(
                    "bucket": "alplakes-eawag",
                    'AWS_ID': Variable.get("AWS_ACCESS_KEY_ID"),
                    'AWS_KEY': Variable.get("AWS_SECRET_ACCESS_KEY"),
-                   'restart': 'simulations/delft3d-flow/restart-files/{}_new/tri-rst.Simulation_Web_rst.{}.000000',
+                   'restart': 'simulations/delft3d-flow/restart-files/{}/tri-rst.Simulation_Web_rst.{}.000000',
                    'filesystem': '{{ filesystem }}',
                    'simulation_repo_name': '{{ simulation_repo_name }}',
                    'simulation_folder_prefix': '{{ simulation_folder_prefix }}'},
