@@ -6,7 +6,7 @@ from airflow.operators.bash import BashOperator
 from airflow.operators.email import EmailOperator
 from airflow.utils.dates import days_ago
 
-from functions.email import report_failure
+from functions.email import report_failure, report_success
 
 from airflow import DAG
 
@@ -99,4 +99,13 @@ bash_test_simulation_docker = BashOperator(
     dag=dag,
 )
 
-python_test_api >> bash_test_api >> python_test_simulation >> bash_test_simulation >> bash_test_simulation_docker >> python_test_fail
+bash_test_success = BashOperator(
+    task_id='bash_test_success',
+    bash_command='echo "Hello World"',
+    queue='simulation',
+    on_failure_callback=report_failure,
+    on_success_callback=report_success,
+    dag=dag,
+)
+
+python_test_api >> bash_test_api >> python_test_simulation >> bash_test_simulation >> bash_test_success >> bash_test_simulation_docker >> python_test_fail

@@ -5,7 +5,7 @@ from airflow.operators.python_operator import PythonOperator
 from airflow.models import Variable
 from airflow.utils.dates import days_ago
 
-from functions.email import report_failure
+from functions.email import report_failure, report_success
 from functions.simulate import parse_profile, upload_restart_files
 
 from airflow import DAG
@@ -124,6 +124,7 @@ remove_results = BashOperator(
     task_id='remove_results',
     bash_command="rm -rf {{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ dag_run.conf.lake }}_{{ dag_run.conf.start }}_{{ dag_run.conf.end }}",
     on_failure_callback=report_failure,
+    on_success_callback=report_success,
     dag=dag,
 )
 
