@@ -43,6 +43,7 @@ def write_logical_date_to_parameter_file(file, date=False, offset=0, **context):
 def create_sencast_operational_metadata(ds, **kwargs):
     satellites = kwargs["satellites"]
     bucket_name = kwargs["bucket"]
+    bucket_url = kwargs["bucket_url"]
     filesystem = kwargs["filesystem"]
     failed = []
 
@@ -60,6 +61,8 @@ def create_sencast_operational_metadata(ds, **kwargs):
         polygons = json.load(f)
 
     lakes = [p["properties"]["Name"] for p in polygons["features"]]
+
+    metadata = {}
 
     for satellite in satellites.keys():
         tiff_keys = []
@@ -140,15 +143,40 @@ def create_sencast_operational_metadata(ds, **kwargs):
 
         for parameter in parameters:
             for lake in lakes:
+                if lake not in metadata:
+                    metadata[lake] = {}
+                if satellite not in metadata[lake]:
+                    metadata[lake][satellite] = []
+                if parameter not in metadata[lake][satellite]:
+                    metadata[lake][satellite].append(parameter)
                 out = [{"dt": d["datetime"], "k": d["key"], "p": d["pixels"], "vp": d["valid_pixels"], "min": d["min"],
-                        "max": d["max"], "mean": d["mean"]} for d in tiff_keys if d['parameter'] == parameter and d["lake"] == lake and d["valid_pixels"] > 0]
+                        "max": d["max"], "mean": d["mean"]} for d in tiff_keys if
+                       d['parameter'] == parameter and d["lake"] == lake and d["valid_pixels"] > 0]
+                out_public = [
+                    {"datetime": d["datetime"], "name": d["key"].split("/")[-1],
+                     "url": "{}/{}".format(bucket_url, d["key"]),
+                     "valid_pixels": "{}%".format(round(float(d["valid_pixels"]) / float(d["pixels"])))} for d in
+                    tiff_keys if
+                    d['parameter'] == parameter and d["lake"] == lake and d["valid_pixels"] > 0]
                 if len(out) > 0:
                     s3.put_object(
                         Body=json.dumps(out),
                         Bucket=bucket_name,
                         Key='metadata/{}/{}_{}.json'.format(satellite, lake, parameter)
                     )
+                    s3.put_object(
+                        Body=json.dumps(out_public),
+                        Bucket=bucket_name,
+                        Key='metadata/{}/{}_{}_public.json'.format(satellite, lake, parameter)
+                    )
 
         print("Operation complete, failed for the following files:")
         for fail in failed:
             print("   {}".format(fail))
+
+    print("Uploading metadata")
+    s3.put_object(
+        Body=json.dumps(metadata),
+        Bucket=bucket_name,
+        Key='metadata/metadata.json'
+    )

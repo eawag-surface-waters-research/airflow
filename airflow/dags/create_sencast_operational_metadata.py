@@ -41,6 +41,7 @@ python_create_metadata = PythonOperator(
     task_id='python_create_metadata',
     python_callable=create_sencast_operational_metadata,
     op_kwargs={'bucket': 'eawagrs',
+               'bucket_url': 'https://eawagrs.s3.eu-central-1.amazonaws.com',
                'satellites': {"sentinel2": "datalakes/alplakes/S2",
                               "sentinel3": "datalakes/sui/S3"},
                'filesystem': "/opt/airflow/filesystem"},
