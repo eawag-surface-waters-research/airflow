@@ -92,7 +92,6 @@ def cache_simulation_data(ds, **kwargs):
         "{}/simulations/layer_alplakes/{}/{}/geometry/{}/{}/{}".format(api, model, lake, start, end, depth))
     if response.status_code == 200:
         geometry = response.text
-
         with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
             temp_filename = temp_file.name
             temp_file.write(geometry)
@@ -104,11 +103,10 @@ def cache_simulation_data(ds, **kwargs):
 
     # Cache Temperature and Velocity
     for parameter in ["temperature", "velocity"]:
+        response = requests.get(
+            "{}/simulations/layer_alplakes/{}/{}/{}/{}/{}/{}".format(api, model, lake, parameter, start, end, format_depth(depth)))
         if response.status_code == 200:
-            response = requests.get(
-                "{}/simulations/layer_alplakes/{}/{}/{}/{}/{}/{}".format(api, model, lake, parameter, start, end, format_depth(depth)))
             temperature = response.text
-
             with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
                 temp_filename = temp_file.name
                 temp_file.write(temperature)
@@ -158,9 +156,8 @@ def cache_simulation_data(ds, **kwargs):
             data = response.json()
             forecast[lake["key"]] = {"date": list(np.array(data["date"]) * 1000), "value": data["temperature"]}
         except Exception as e:
-            print(e)
-            raise
             print("Failed for Lake {}".format(lake["key"]))
+            print(e)
 
     with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
         temp_filename = temp_file.name
