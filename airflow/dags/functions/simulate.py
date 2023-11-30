@@ -131,7 +131,8 @@ def cache_simulation_data(ds, **kwargs):
                                                                                  lake_info["depth"]))
             data = response.json()
             forecast[lake["key"]] = {"date": list(np.array(data["date"]) * 1000), "value": data["temperature"]}
-        except:
+        except Exception as e:
+            print(e)
             print("Failed for Lake {}".format(lake["key"]))
 
     with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
