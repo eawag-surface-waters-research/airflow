@@ -84,8 +84,8 @@ def cache_simulation_data(ds, **kwargs):
     max_date = datetime.strptime(lake_metadata["end_date"], '%Y-%m-%d %H:%M').replace(tzinfo=timezone.utc)
     start_date = max_date + timedelta(days=lake_info["customPeriod"]["start"])
     depth = closest(lake_metadata["depths"], lake_info["depth"])
-    start = start_date.strftime("%Y%m%d%H%M")
-    end = max_date.strftime("%Y%m%d%H%M")
+    start = start_date.strftime("%Y%m%d%H") + "00"
+    end = max_date.strftime("%Y%m%d%H") + "00"
 
     # Cache Geometry
     response = requests.get(
