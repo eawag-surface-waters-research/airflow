@@ -16,7 +16,8 @@ Example config input
   "profile": "20190109",
   "start": "20190109",
   "end": "20190110",
-  "cores": 5
+  "cores": 5,
+  "server_folder": "results_reprocess",
 }
 """
 
@@ -115,7 +116,7 @@ send_results = BashOperator(
         bash_command="sshpass -p {{ API_PASSWORD }} scp -r "
                      "-o StrictHostKeyChecking=no "
                      "{{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ dag_run.conf.lake }}_{{ dag_run.conf.start }}_{{ dag_run.conf.end }}/postprocess/* "
-                     "{{ api_user }}@{{ api_server }}:{{ api_server_folder }}/{{ dag_run.conf.lake }}",
+                     "{{ api_user }}@{{ api_server }}:{{ api_server_folder }}/{{ dag_run.conf.server_folder }}/{{ dag_run.conf.lake }}",
         on_failure_callback=report_failure,
         dag=dag,
     )
