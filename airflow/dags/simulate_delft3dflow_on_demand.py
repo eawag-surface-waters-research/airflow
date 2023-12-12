@@ -17,7 +17,7 @@ Example config input
   "start": "20190109",
   "end": "20190110",
   "cores": 5,
-  "server_folder": "results_reprocess",
+  "server_folder": "results_reprocess"
 }
 """
 
@@ -62,7 +62,7 @@ dag = DAG(
                          'api_user': "alplakes",
                          'api_server': 'eaw-alplakes2',
                          'API_PASSWORD': Variable.get("API_PASSWORD"),
-                         'api_server_folder': "/nfsmount/filesystem/media/simulations/delft3d-flow/results_reprocess",
+                         'api_server_folder': "/nfsmount/filesystem/media/simulations/delft3d-flow",
                          }
 )
 
