@@ -62,4 +62,19 @@ download = BashOperator(
     dag=dag,
 )
 
-clone_repo >> download
+remove_old_files = BashOperator(
+    task_id='download',
+    bash_command="cd {{ params.git_dir }}; python src/clean.py -s {{ params.hostname }} "
+                 "-u {{ params.username }} -p {{ params.COSMO_FTP_PASSWORD }} "
+                 "-f {{ params.file_types }} -d {{ params.days }}",
+    params={'git_dir': '/opt/airflow/filesystem/git/alplakes-externaldata',
+            'hostname': 'sftp.eawag.ch',
+            'username': 'cosmo',
+            'file_types': '.nc,.zip',
+            'days': 7,
+            'COSMO_FTP_PASSWORD': Variable.get("COSMO_FTP_PASSWORD")},
+    on_failure_callback=report_failure,
+    dag=dag,
+)
+
+clone_repo >> download >> remove_old_files
