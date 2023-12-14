@@ -63,7 +63,7 @@ download = BashOperator(
 )
 
 remove_old_files = BashOperator(
-    task_id='download',
+    task_id='remove_old_files',
     bash_command="cd {{ params.git_dir }}; python src/clean.py -s {{ params.hostname }} "
                  "-u {{ params.username }} -p {{ params.COSMO_FTP_PASSWORD }} "
                  "-f {{ params.file_types }} -d {{ params.days }}",
