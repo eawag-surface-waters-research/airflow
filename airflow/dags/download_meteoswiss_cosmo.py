@@ -71,7 +71,7 @@ remove_old_files = BashOperator(
             'hostname': 'sftp.eawag.ch',
             'username': 'cosmo',
             'file_types': '.nc,.zip',
-            'days': 7,
+            'days': 3,
             'COSMO_FTP_PASSWORD': Variable.get("COSMO_FTP_PASSWORD")},
     on_failure_callback=report_failure,
     dag=dag,
