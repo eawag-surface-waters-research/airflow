@@ -34,7 +34,7 @@ default_args = {
     # 'trigger_rule': 'all_success'
 }
 dag = DAG(
-    "simstrat_operational_switzerland",
+    "simulate_simstrat_operational",
     default_args=default_args,
     description='Operational Simstrat simulation.',
     schedule_interval="15 9 * * *",
