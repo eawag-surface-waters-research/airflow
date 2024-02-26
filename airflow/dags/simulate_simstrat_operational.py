@@ -44,57 +44,21 @@ dag = DAG(
                          'FILESYSTEM': Variable.get("FILESYSTEM"),
                          'simulation_repo_https': "https://github.com/Eawag-AppliedSystemAnalysis/operational-simstrat.git",
                          'simulation_repo_name': "operational-simstrat",
-                         'today': get_today,
-                         'argfile': "operational.par",
-                         'api': "http://eaw-alplakes2:8000",
-                         'api_user': "alplakes",
-                         'api_server': 'eaw-alplakes2',
                          'API_PASSWORD': Variable.get("API_PASSWORD"),
-                         'api_server_folder': "/nfsmount/filesystem/media/simulations/simstrat/results"
-                         }
-)
-
-prepare_simulation_files = BashOperator(
-    task_id='prepare_simulation_files',
-    bash_command="mkdir -p {{ filesystem }}/git;"
-                 "cd {{ filesystem }}/git;"
-                 "git clone {{ simulation_repo_https }} && cd {{ simulation_repo_name }} || cd {{ simulation_repo_name }} && git stash && git pull;"
-                 "python src/preprocessing.py -a {{ argfile }} -p {{ params.parallel }} -t {{ today(ds) }} -a {{ api }}",
-    params={'parallel': 5},
-    on_failure_callback=report_failure,
-    dag=dag,
+                         },
+    params={
+        'overwrite_simulation': 'false',
+    }
 )
 
 run_simulation = BashOperator(
     task_id='run_simulation',
-    bash_command="cd {{ filesystem }}/git/{{ simulation_repo_name }};"
-                 "python src/run.py -a {{ argfile }} -p {{ params.parallel }} -t {{ today(ds) }}",
-    params={'parallel': 5},
+    bash_command="mkdir -p {{ filesystem }}/git;"
+                 "cd {{ filesystem }}/git;"
+                 "git clone {{ simulation_repo_https }} && cd {{ simulation_repo_name }} || cd {{ simulation_repo_name }} && git stash && git pull;"
+                 "python src/main.py operational server_password={{ API_PASSWORD }} overwrite_simulation={{ params.overwrite_simulation }}",
     on_failure_callback=report_failure,
     dag=dag,
 )
 
-postprocess_simulation = BashOperator(
-    task_id='postprocess_simulation',
-    bash_command="cd {{ filesystem }}/git/{{ simulation_repo_name }};"
-                 "python src/postprocess.py -a {{ argfile }} -p {{ params.parallel }} -t {{ today(ds) }}",
-    params={'parallel': 5},
-    on_failure_callback=report_failure,
-    dag=dag,
-)
-
-send_results = BashOperator(
-    task_id='send_results',
-    bash_command="",
-    on_failure_callback=report_failure,
-    dag=dag,
-)
-
-remove_results = BashOperator(
-    task_id='remove_results',
-    bash_command="",
-    on_failure_callback=report_failure,
-    dag=dag,
-)
-
-prepare_simulation_files >> run_simulation >> postprocess_simulation >> send_results >> remove_results
+run_simulation
