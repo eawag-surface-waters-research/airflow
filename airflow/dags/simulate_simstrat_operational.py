@@ -5,7 +5,7 @@ from airflow.operators.python_operator import PythonOperator
 from airflow.models import Variable
 from airflow.utils.dates import days_ago
 
-from functions.simulate import get_today
+from functions.simstrat import cache_simstrat_operational_data
 
 from functions.email import report_failure
 
@@ -61,4 +61,15 @@ run_simulation = BashOperator(
     dag=dag,
 )
 
-run_simulation
+cache_data = PythonOperator(
+        task_id='cache_data',
+        python_callable=cache_simstrat_operational_data,
+        op_kwargs={"bucket": "https://alplakes-eawag.s3.eu-central-1.amazonaws.com",
+                   "api": "https://alplakes-api.eawag.ch",
+                   'AWS_ID': Variable.get("AWS_ACCESS_KEY_ID"),
+                   'AWS_KEY': Variable.get("AWS_SECRET_ACCESS_KEY")},
+        on_failure_callback=report_failure,
+        dag=dag,
+    )
+
+run_simulation >> cache_data
