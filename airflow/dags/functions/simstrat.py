@@ -48,7 +48,7 @@ def cache_simstrat_operational_data(ds, **kwargs):
 
     forecast = {}
     start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=1)
-    end = start + timedelta(days=5)
+    end = start + timedelta(days=6)
     for lake in lakes:
         if lake["name"] in rename and lake["name"] == False:
             continue
