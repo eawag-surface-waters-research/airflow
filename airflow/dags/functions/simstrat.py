@@ -47,6 +47,7 @@ def cache_simstrat_operational_data(ds, **kwargs):
     lakes = next((d for d in response.json() if d.get('model') == "simstrat"), {"lakes": []})["lakes"]
 
     forecast = {}
+    failed = 0
     start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=1)
     end = start + timedelta(days=6)
     for lake in lakes:
@@ -54,13 +55,17 @@ def cache_simstrat_operational_data(ds, **kwargs):
             continue
         data = {}
         for parameter in parameters:
-            response = requests.get("{}/simulations/1d/point/simstrat/{}/{}/{}/{}/{}".format(
+            url = "{}/simulations/1d/point/simstrat/{}/{}/{}/{}/{}".format(
                 api, lake["name"], parameter["simstrat_key"], start.strftime("%Y%m%d%H%M"), end.strftime("%Y%m%d%H%M"),
-                lake["depths"][parameter["depth"]]))
+                lake["depths"][parameter["depth"]])
+            response = requests.get(url)
             if response.status_code == 200:
                 if "time" not in data:
                     data["time"] = [iso_to_unix(t) for t in response.json()["time"]]
                 data[parameter["alplakes_key"]] = response.json()[parameter["simstrat_key"]]
+            else:
+                failed = failed + 1
+                print("Error: {}".format(url))
         if lake["name"] in rename:
             forecast[rename[lake["name"]]] = data
         else:
@@ -71,3 +76,6 @@ def cache_simstrat_operational_data(ds, **kwargs):
         json.dump(forecast, temp_file)
     s3.upload_file(temp_filename, bucket_key, "simulations/forecast2.json")
     os.remove(temp_filename)
+
+    if failed > 0:
+        raise ValueError("Failed to collect data for {} lakes, see log for details.".format(failed))
