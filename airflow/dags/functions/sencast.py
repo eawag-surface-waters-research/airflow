@@ -152,12 +152,14 @@ def create_sencast_operational_metadata(ds, **kwargs):
                 out = [{"dt": d["datetime"], "k": d["key"], "p": d["pixels"], "vp": d["valid_pixels"], "min": d["min"],
                         "max": d["max"], "mean": d["mean"]} for d in tiff_keys if
                        d['parameter'] == parameter and d["lake"] == lake and d["valid_pixels"] > 0]
+                max_pixels = max(out, key=lambda x: x['p'])["p"]
                 out_public = [
                     {"datetime": d["datetime"], "name": d["key"].split("/")[-1],
                      "url": "{}/{}".format(bucket_url, d["key"]),
-                     "valid_pixels": "{}%".format(round(float(d["valid_pixels"]) / float(d["pixels"])))} for d in
+                     "valid_pixels": "{}%".format(round(float(d["valid_pixels"]) / float(max_pixels) * 100))} for d in
                     tiff_keys if
                     d['parameter'] == parameter and d["lake"] == lake and d["valid_pixels"] > 0]
+                filtered = [d for d in out if d['vp'] / max_pixels > 0.1]
                 if len(out) > 0:
                     s3.put_object(
                         Body=json.dumps(out),
@@ -168,6 +170,13 @@ def create_sencast_operational_metadata(ds, **kwargs):
                         Body=json.dumps(out_public),
                         Bucket=bucket_name,
                         Key='metadata/{}/{}_{}_public.json'.format(satellite, lake, parameter)
+                    )
+                if len(filtered) > 0:
+                    latest = max(filtered, key=lambda x: x['dt'])
+                    s3.put_object(
+                        Body=json.dumps(latest),
+                        Bucket=bucket_name,
+                        Key='metadata/{}/{}_{}_latest.json'.format(satellite, lake, parameter)
                     )
 
         print("Operation complete, failed for the following files:")
