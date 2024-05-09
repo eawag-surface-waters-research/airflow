@@ -60,7 +60,7 @@ def create_sencast_operational_metadata(ds, **kwargs):
     with open(lakes_file) as f:
         polygons = json.load(f)
 
-    lakes = [p["properties"]["Name"] for p in polygons["features"]]
+    lakes = [p["properties"]["key"] for p in polygons["features"]]
 
     metadata = {}
 
@@ -116,14 +116,14 @@ def create_sencast_operational_metadata(ds, **kwargs):
                                 data_max = np.nanmax(valid_data).astype(np.float64)
                                 data_mean = np.nanmean(valid_data).astype(np.float64)
                                 tiff_keys.append(
-                                    {"lake": lake["properties"]["Name"], "processor": parts[0],
+                                    {"lake": lake["properties"]["key"], "processor": parts[0],
                                      "tile": parts[-1].split(".")[0], "datetime": parts[-2],
                                      "satellite": parts[-3], "parameter": parameter, "key": key, "pixels": pixels,
                                      "valid_pixels": valid_pixels, "prefix": "/".join(path[0:-1]),
                                      "file": file, "min": data_min, "max": data_max, "mean": data_mean})
                             else:
                                 tiff_keys.append(
-                                    {"lake": lake["properties"]["Name"], "processor": parts[0],
+                                    {"lake": lake["properties"]["key"], "processor": parts[0],
                                      "tile": parts[-1].split(".")[0], "datetime": parts[-2],
                                      "satellite": parts[-3], "parameter": parameter, "key": key, "pixels": pixels,
                                      "valid_pixels": valid_pixels, "prefix": "/".join(path[0:-1]),
