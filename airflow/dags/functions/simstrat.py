@@ -1,5 +1,6 @@
 import os
 import json
+import time
 import boto3
 import requests
 import tempfile
@@ -79,3 +80,23 @@ def cache_simstrat_operational_data(ds, **kwargs):
 
     if failed > 0:
         raise ValueError("Failed to collect data for {} lakes, see log for details.".format(failed))
+
+
+def create_simstrat_doy(ds, **kwargs):
+    depths = kwargs["depths"]
+    parameters = kwargs["parameters"]
+    api = kwargs["api"]
+    response = requests.get("{}/simulations/1d/metadata".format(api))
+    if response.status_code != 200:
+        raise ValueError("Unable to access Simstrat metadata")
+    lakes = response.json()[0]["lakes"]
+    for lake in lakes:
+        for depth in depths:
+            for parameter in parameters:
+                d = depth
+                if depth == "min":
+                    d = 0
+                if depth == "max":
+                    d = max(lake["depths"])
+                requests.get("{}/simulations/1d/doy/write/simstrat/{}/{}/{}".format(api, lake["name"], parameter, d))
+                time.sleep(20)
