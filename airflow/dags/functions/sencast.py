@@ -143,12 +143,6 @@ def create_sencast_operational_metadata(ds, **kwargs):
 
         for parameter in parameters:
             for lake in lakes:
-                if lake not in metadata:
-                    metadata[lake] = {}
-                if satellite not in metadata[lake]:
-                    metadata[lake][satellite] = []
-                if parameter not in metadata[lake][satellite]:
-                    metadata[lake][satellite].append(parameter)
                 out = [{"dt": d["datetime"], "k": d["key"], "p": d["pixels"], "vp": d["valid_pixels"], "min": d["min"],
                         "max": d["max"], "mean": d["mean"]} for d in tiff_keys if
                        d['parameter'] == parameter and d["lake"] == lake and d["valid_pixels"] > 0]
@@ -179,6 +173,12 @@ def create_sencast_operational_metadata(ds, **kwargs):
                             Bucket=bucket_name,
                             Key='metadata/{}/{}_{}_latest.json'.format(satellite, lake, parameter)
                         )
+                        if lake not in metadata:
+                            metadata[lake] = {}
+                        if satellite not in metadata[lake]:
+                            metadata[lake][satellite] = []
+                        if parameter not in metadata[lake][satellite]:
+                            metadata[lake][satellite].append(parameter)
 
         print("Operation complete, failed for the following files:")
         for fail in failed:
