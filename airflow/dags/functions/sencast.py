@@ -89,14 +89,12 @@ def create_sencast_operational_metadata(ds, **kwargs):
                     if parameter not in parameters:
                         parameters.append(parameter)
 
-                    print("Processing: {}".format(file))
                     local_file = os.path.join(folder, file)
                     if not os.path.isfile(local_file):
-                        print("Downloading.")
+                        print("Downloading: {}.".format(file))
                         s3.download_file(bucket_name, key, local_file)
 
                     if any(d.get("key") == key for d in tiff_keys):
-                        print("Already in tiff_keys. Skipping.")
                         continue
 
                     try:
