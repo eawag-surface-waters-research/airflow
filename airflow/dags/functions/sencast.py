@@ -153,7 +153,6 @@ def create_sencast_operational_metadata(ds, **kwargs):
                         in
                         tiff_keys if
                         d['parameter'] == parameter and d["lake"] == lake and d["valid_pixels"] > 0]
-                    filtered = [d for d in out if d['vp'] / max_pixels > 0.1]
                     s3.put_object(
                         Body=json.dumps(out),
                         Bucket=bucket_name,
@@ -164,8 +163,13 @@ def create_sencast_operational_metadata(ds, **kwargs):
                         Bucket=bucket_name,
                         Key='metadata/{}/{}_{}_public.json'.format(satellite, lake, parameter)
                     )
+                    filtered = [d for d in out if d['vp'] / max_pixels > 0.1]
                     if len(filtered) > 0:
-                        latest = max(filtered, key=lambda x: x['dt'])
+                        sorted_list = sorted(filtered, key=lambda x: x['dt'])
+                        latest = sorted_list[-1]
+                        for i in range(2, 5):
+                            if sorted_list[-i]["dt"][:8] == latest["dt"][:8] and sorted_list[-i]["vp"] > latest["vp"]:
+                                latest = sorted_list[-i]
                         s3.put_object(
                             Body=json.dumps(latest),
                             Bucket=bucket_name,
