@@ -173,9 +173,7 @@ def create_sencast_operational_metadata(ds, **kwargs):
                                     if sorted_list[-i]["dt"][:8] == latest["dt"][:8] and sorted_list[-i]["vp"] > latest["vp"]:
                                         latest = sorted_list[-i]
                             except:
-                                print(len(filtered))
-                                print(filtered)
-                                raise
+                                print("Failed to check for same day image with more pixels")
                         s3.put_object(
                             Body=json.dumps(latest),
                             Bucket=bucket_name,
