@@ -168,9 +168,14 @@ def create_sencast_operational_metadata(ds, **kwargs):
                         sorted_list = sorted(filtered, key=lambda x: x['dt'])
                         latest = sorted_list[-1]
                         if len(filtered) > 1:
-                            for i in range(2, min(len(filtered), 5) + 1):
-                                if sorted_list[-i]["dt"][:8] == latest["dt"][:8] and sorted_list[-i]["vp"] > latest["vp"]:
-                                    latest = sorted_list[-i]
+                            try:
+                                for i in range(2, min(len(filtered), 5) + 1):
+                                    if sorted_list[-i]["dt"][:8] == latest["dt"][:8] and sorted_list[-i]["vp"] > latest["vp"]:
+                                        latest = sorted_list[-i]
+                            except:
+                                print(len(filtered))
+                                print(filtered)
+                                raise
                         s3.put_object(
                             Body=json.dumps(latest),
                             Bucket=bucket_name,
