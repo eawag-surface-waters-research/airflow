@@ -98,5 +98,7 @@ def create_simstrat_doy(ds, **kwargs):
                     d = 0
                 if depth == "max":
                     d = max(lake["depths"])
+                print("{}/simulations/1d/doy/write/simstrat/{}/{}/{}".format(api, lake["name"], parameter, d))
                 requests.get("{}/simulations/1d/doy/write/simstrat/{}/{}/{}".format(api, lake["name"], parameter, d))
+                print("Wait 20 seconds")
                 time.sleep(20)
