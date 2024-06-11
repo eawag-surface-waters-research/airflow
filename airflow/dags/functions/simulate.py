@@ -102,7 +102,7 @@ def cache_simulation_data(ds, **kwargs):
         print(response.text)
 
     # Cache Temperature and Velocity
-    for parameter in ["temperature", "velocity"]:
+    for parameter in ["temperature", "velocity", "thermocline"]:
         response = requests.get(
             "{}/simulations/layer_alplakes/{}/{}/{}/{}/{}/{}".format(api, model, lake, parameter, start, end, format_depth(depth)))
         if response.status_code == 200:
