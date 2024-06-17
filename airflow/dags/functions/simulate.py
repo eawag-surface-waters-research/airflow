@@ -58,6 +58,18 @@ def closest(lst, k):
     return lst[min(range(len(lst)), key=lambda i: abs(lst[i] - k))]
 
 
+def interpolate(original_times, new_times, original_data):
+    ot = np.array(original_times)
+    nt = np.array(new_times)
+    od = np.array(original_data)
+    mask = (nt >= ot[0]) & (nt <= ot[-1])
+    interpolated_data = np.full_like(nt, np.nan, dtype=float)
+    if np.any(mask):
+        clamped = np.clip(nt, ot[0], ot[-1])
+        interpolated_data[mask] = np.interp(clamped[mask], ot, od)
+    return list(interpolated_data)
+
+
 def cache_simulation_data(ds, **kwargs):
     lake = kwargs["lake"]
     model = kwargs["model"]
@@ -70,6 +82,8 @@ def cache_simulation_data(ds, **kwargs):
     s3 = boto3.client("s3",
                       aws_access_key_id=aws_access_key_id,
                       aws_secret_access_key=aws_secret_access_key)
+
+    # ALPLAKES V1 - REMOVE AFTER SWITCH TO V2
 
     response = requests.get("{}/static/website/metadata/{}.json".format(bucket, lake))
     if response.status_code != 200:
@@ -104,14 +118,16 @@ def cache_simulation_data(ds, **kwargs):
     # Cache Temperature and Velocity
     for parameter in ["temperature", "velocity", "thermocline"]:
         response = requests.get(
-            "{}/simulations/layer_alplakes/{}/{}/{}/{}/{}/{}".format(api, model, lake, parameter, start, end, format_depth(depth)))
+            "{}/simulations/layer_alplakes/{}/{}/{}/{}/{}/{}".format(api, model, lake, parameter, start, end,
+                                                                     format_depth(depth)))
         if response.status_code == 200:
             temperature = response.text
             with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
                 temp_filename = temp_file.name
                 temp_file.write(temperature)
             s3.upload_file(temp_filename, bucket_key,
-                           "simulations/{}/data/{}/{}_{}_{}_{}.txt".format(model, lake, parameter, start, end, format_depth(depth)))
+                           "simulations/{}/data/{}/{}_{}_{}_{}.txt".format(model, lake, parameter, start, end,
+                                                                           format_depth(depth)))
             os.remove(temp_filename)
         else:
             print("Failed to cache {}".format(parameter))
@@ -149,10 +165,15 @@ def cache_simulation_data(ds, **kwargs):
                                                                                  end.strftime("%Y%m%d%H%M"),
                                                                                  lake_info["depth"]))
             if response.status_code != 200:
-                raise ValueError("Unable to access {}/simulations/layer/average_temperature/{}/{}/{}/{}/{}".format(api, model, lake["key"],
-                                                                                 start.strftime("%Y%m%d%H%M"),
-                                                                                 end.strftime("%Y%m%d%H%M"),
-                                                                                 lake_info["depth"]))
+                raise ValueError(
+                    "Unable to access {}/simulations/layer/average_temperature/{}/{}/{}/{}/{}".format(api, model,
+                                                                                                      lake["key"],
+                                                                                                      start.strftime(
+                                                                                                          "%Y%m%d%H%M"),
+                                                                                                      end.strftime(
+                                                                                                          "%Y%m%d%H%M"),
+                                                                                                      lake_info[
+                                                                                                          "depth"]))
             data = response.json()
             forecast[lake["key"]] = {"date": list(np.array(data["date"]) * 1000), "value": data["temperature"]}
         except Exception as e:
@@ -164,6 +185,92 @@ def cache_simulation_data(ds, **kwargs):
         json.dump(forecast, temp_file)
     s3.upload_file(temp_filename, bucket_key, "simulations/forecast.json")
     os.remove(temp_filename)
+
+    # ALPLAKES V2 - KEEP AFTER SWITCH TO V2
+
+    # Collect information
+    response = requests.get("{}/simulations/metadata/{}/{}".format(api, model, lake))
+    if response.status_code != 200:
+        raise ValueError("Unable to access {}/simulations/metadata/{}/{}".format(api, model, lake))
+    lake_metadata = response.json()
+
+    default_depth = 1
+    default_period = -7
+    response = requests.get("{}/static/website/metadata/{}.json".format(bucket, lake))
+    if response.status_code != 200:
+        raise ValueError("Unable to access {}/static/website/metadata/{}.json".format(bucket, lake))
+    lake_info = response.json()
+    try:
+        default_depth = lake_info["metadata"]["default_depth"]
+    except:
+        print("Failed to collect custom depth, using default of {}".format(default_depth))
+    try:
+        layer = [l for l in lake_info["layers"] if l["id"] == "3D_temperature"][0]
+        default_period = layer["sources"]["alplakes_delft3d"]["start"]
+    except:
+        print("Failed to collect custom period, using default of {}".format(default_period))
+
+    # Cache lake page files
+    max_date = datetime.strptime(lake_metadata["end_date"], '%Y-%m-%d %H:%M').replace(tzinfo=timezone.utc)
+    start_date = max_date + timedelta(days=default_period)
+    depth = closest(lake_metadata["depths"], default_depth)
+    start = start_date.strftime("%Y%m%d%H") + "00"
+    end = max_date.strftime("%Y%m%d%H") + "00"
+
+    for parameter in ["geometry", "temperature", "velocity", "thermocline"]:
+        response = requests.get(
+            "{}/simulations/layer_alplakes/{}/{}/{}/{}/{}/{}".format(api, model, lake, parameter, start, end, depth))
+        if response.status_code == 200:
+            temperature = response.text
+            with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
+                temp_filename = temp_file.name
+                temp_file.write(temperature)
+            s3.upload_file(temp_filename, bucket_key, "simulations/{}/cache/{}/{}.txt".format(model, lake, parameter))
+            os.remove(temp_filename)
+        else:
+            print("Failed to cache {}".format(parameter))
+            print(response.text)
+
+    # Cache metadata
+    with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
+        temp_filename = temp_file.name
+        json.dump(lake_metadata, temp_file)
+    s3.upload_file(temp_filename, bucket_key, "simulations/{}/cache/{}/metadata.json".format(model, lake))
+    os.remove(temp_filename)
+
+    # Cache home page forecast
+    start = datetime.now().replace(tzinfo=timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(
+        days=1)
+    end = datetime.strptime(lake_metadata["end_date"] + ":00+00:00", '%Y-%m-%d %H:%M:%S%z')
+    response = requests.get(
+        "{}/simulations/layer/average_temperature/{}/{}/{}/{}/{}"
+        .format(api, model, lake,start.strftime("%Y%m%d%H%M"), end.strftime("%Y%m%d%H%M"), default_depth))
+    if response.status_code != 200:
+        raise ValueError(
+            "Unable to access {}/simulations/layer/average_temperature/{}/{}/{}/{}/{}"
+            .format(api, model, lake, start.strftime("%Y%m%d%H%M"), end.strftime("%Y%m%d%H%M"), default_depth)
+        )
+    data = response.json()
+
+    response = requests.get("{}/simulations/forecast2.json".format(bucket))
+    if response.status_code == 200:
+        forecast = response.json()
+    elif response.status_code == 404:
+        forecast = {}
+    else:
+        raise ValueError("Problems connecting to forecast in {}".format(bucket))
+    if lake not in forecast or data["date"][-1] * 1000 > forecast[lake]["time"][-1] + (6 * 3600 * 1000):
+        out = {"time": [int(d * 1000) for d in data["date"]], "temperature": data["temperature"]}
+        if lake in forecast and "ice" in forecast[lake]:
+            out["ice"] = interpolate(forecast[lake]["time"], out["time"], forecast[lake]["ice"])
+        if lake in forecast and "oxygen" in forecast[lake]:
+            out["oxygen"] = interpolate(forecast[lake]["time"], out["time"], forecast[lake]["oxygen"])
+        forecast[lake] = out
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
+            temp_filename = temp_file.name
+            json.dump(forecast, temp_file)
+        s3.upload_file(temp_filename, bucket_key, "simulations/forecast2.json".format(model, lake))
+        os.remove(temp_filename)
 
 
 def upload_restart_files(ds, **kwargs):
