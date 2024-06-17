@@ -47,7 +47,14 @@ def cache_simstrat_operational_data(ds, **kwargs):
         raise ValueError("Unable to access Simstrat metadata")
     lakes = next((d for d in response.json() if d.get('model') == "simstrat"), {"lakes": []})["lakes"]
 
-    forecast = {}
+    response = requests.get("{}/simulations/forecast2.json".format(bucket))
+    if response.status_code == 200:
+        forecast = response.json()
+    elif response.status_code == 404:
+        forecast = {}
+    else:
+        raise ValueError("Problems connecting to forecast in {}".format(bucket))
+
     failed = 0
     start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=1)
     end = start + timedelta(days=6)
