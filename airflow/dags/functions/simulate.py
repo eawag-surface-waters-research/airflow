@@ -148,26 +148,26 @@ def cache_simulation_data(ds, **kwargs):
     start = datetime.now().replace(tzinfo=timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(
         days=1)
     forecast = {}
-    for lake in lake_list:
+    for lake_properties in lake_list:
         try:
-            response = requests.get("{}/simulations/metadata/{}/{}".format(api, model, lake["key"]))
+            response = requests.get("{}/simulations/metadata/{}/{}".format(api, model, lake_properties["key"]))
             if response.status_code != 200:
-                raise ValueError("Unable to access {}/simulations/metadata/{}/{}".format(api, model, lake["key"]))
+                raise ValueError("Unable to access {}/simulations/metadata/{}/{}".format(api, model, lake_properties["key"]))
             lake_metadata = response.json()
-            response = requests.get("{}/static/website/metadata/{}.json".format(bucket, lake["key"]))
+            response = requests.get("{}/static/website/metadata/{}.json".format(bucket, lake_properties["key"]))
             if response.status_code != 200:
-                raise ValueError("Unable to access {}/static/website/metadata/{}.json".format(bucket, lake["key"]))
+                raise ValueError("Unable to access {}/static/website/metadata/{}.json".format(bucket, lake_properties["key"]))
             lake_info = response.json()
             end = datetime.strptime(lake_metadata["end_date"] + ":00+00:00", '%Y-%m-%d %H:%M:%S%z')
             response = requests.get(
-                "{}/simulations/layer/average_temperature/{}/{}/{}/{}/{}".format(api, model, lake["key"],
+                "{}/simulations/layer/average_temperature/{}/{}/{}/{}/{}".format(api, model, lake_properties["key"],
                                                                                  start.strftime("%Y%m%d%H%M"),
                                                                                  end.strftime("%Y%m%d%H%M"),
                                                                                  lake_info["depth"]))
             if response.status_code != 200:
                 raise ValueError(
                     "Unable to access {}/simulations/layer/average_temperature/{}/{}/{}/{}/{}".format(api, model,
-                                                                                                      lake["key"],
+                                                                                                      lake_properties["key"],
                                                                                                       start.strftime(
                                                                                                           "%Y%m%d%H%M"),
                                                                                                       end.strftime(
@@ -175,9 +175,9 @@ def cache_simulation_data(ds, **kwargs):
                                                                                                       lake_info[
                                                                                                           "depth"]))
             data = response.json()
-            forecast[lake["key"]] = {"date": list(np.array(data["date"]) * 1000), "value": data["temperature"]}
+            forecast[lake_properties["key"]] = {"date": list(np.array(data["date"]) * 1000), "value": data["temperature"]}
         except Exception as e:
-            print("Failed for Lake {}".format(lake["key"]))
+            print("Failed for Lake {}".format(lake_properties["key"]))
             print(e)
 
     with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
