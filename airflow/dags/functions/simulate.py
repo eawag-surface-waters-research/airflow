@@ -67,7 +67,8 @@ def interpolate(original_times, new_times, original_data):
     if np.any(mask):
         clamped = np.clip(nt, ot[0], ot[-1])
         interpolated_data[mask] = np.interp(clamped[mask], ot, od)
-    return list(interpolated_data)
+    interpolated_data = [val if not np.isnan(val) else None for val in interpolated_data]
+    return interpolated_data
 
 
 def cache_simulation_data(ds, **kwargs):
