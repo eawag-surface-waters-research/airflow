@@ -1,8 +1,9 @@
 from airflow.operators.python_operator import PythonOperator
 from airflow.utils.dates import days_ago
+from airflow.models import Variable
 
 from functions.email import report_failure
-from functions.simstrat import create_simstrat_doy
+from functions.simstrat import create_simstrat_doy, cache_simstrat_doy
 
 from airflow import DAG
 
@@ -40,11 +41,24 @@ dag = DAG(
 python_create_simstrat_doy = PythonOperator(
     task_id='python_create_simstrat_doy',
     python_callable=create_simstrat_doy,
-    op_kwargs={'depths': ["min", "max"],
+    op_kwargs={'depths': ["min"],
                "parameters": ["T"],
-               "api": "https://alplakes-api.eawag.ch"},
+               "api": "http://eaw-alplakes2:8000"},
     on_failure_callback=report_failure,
     dag=dag,
 )
 
-python_create_simstrat_doy
+python_cache_simstrat_doy = PythonOperator(
+    task_id='python_cache_simstrat_doy',
+    python_callable=cache_simstrat_doy,
+    op_kwargs={'depths': ["min"],
+               "parameters": ["T"],
+               "bucket": "https://alplakes-eawag.s3.eu-central-1.amazonaws.com",
+               "api": "https://alplakes-api.eawag.ch",
+               'AWS_ID': Variable.get("AWS_ACCESS_KEY_ID"),
+               'AWS_KEY': Variable.get("AWS_SECRET_ACCESS_KEY")},
+    on_failure_callback=report_failure,
+    dag=dag,
+)
+
+python_create_simstrat_doy >> python_cache_simstrat_doy

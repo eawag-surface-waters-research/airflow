@@ -109,3 +109,42 @@ def create_simstrat_doy(ds, **kwargs):
                 requests.get("{}/simulations/1d/doy/write/simstrat/{}/{}/{}".format(api, lake["name"], parameter, d))
                 print("Wait 20 seconds")
                 time.sleep(20)
+
+
+def cache_simstrat_doy(ds, **kwargs):
+    depths = kwargs["depths"]
+    parameters = kwargs["parameters"]
+    api = kwargs["api"]
+    bucket = kwargs["bucket"]
+    aws_access_key_id = kwargs["AWS_ID"]
+    aws_secret_access_key = kwargs["AWS_KEY"]
+    bucket_key = bucket.split(".")[0].split("//")[1]
+
+    s3 = boto3.client("s3",
+                      aws_access_key_id=aws_access_key_id,
+                      aws_secret_access_key=aws_secret_access_key)
+
+    response = requests.get("{}/simulations/1d/metadata".format(api))
+    if response.status_code != 200:
+        raise ValueError("Unable to access Simstrat metadata")
+    lakes = response.json()[0]["lakes"]
+    for lake in lakes:
+        for depth in depths:
+            for parameter in parameters:
+                d = depth
+                if depth == "min":
+                    d = 0
+                if depth == "max":
+                    d = max(lake["depths"])
+                response = requests.get(
+                    "{}/simulations/1d/doy/simstrat/{}/{}/{}".format(api, lake["name"], parameter, d))
+                if response.status_code == 200:
+                    data = response.json()
+                    with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
+                        temp_filename = temp_file.name
+                        json.dump(data, temp_file)
+                    s3.upload_file(temp_filename, bucket_key,
+                                   "simulations/simstrat/cache/{}/doy_{}_{}.json".format(lake["name"], parameter, d))
+                    os.remove(temp_filename)
+                else:
+                    print("Failed to retrieve simulations/1d/doy/simstrat/{}/{}/{}".format(lake["name"], parameter, d))
