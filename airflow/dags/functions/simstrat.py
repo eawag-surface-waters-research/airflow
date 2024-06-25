@@ -85,8 +85,59 @@ def cache_simstrat_operational_data(ds, **kwargs):
     s3.upload_file(temp_filename, bucket_key, "simulations/forecast2.json")
     os.remove(temp_filename)
 
-    if failed > 0:
-        raise ValueError("Failed to collect data for {} lakes, see log for details.".format(failed))
+    for lake in lakes:
+        # Metadata
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
+            temp_filename = temp_file.name
+            json.dump(lake, temp_file)
+        s3.upload_file(temp_filename, bucket_key, "simulations/simstrat/cache/{}/metadata.json".format(lake["name"]))
+        os.remove(temp_filename)
+
+        # Heatmaps
+        end = datetime.strptime(lake["end_date"], "%Y-%m-%d %H:%M")
+        start = end - timedelta(days=365)
+        for parameter in ["T", "OxygenSat"]:
+            response = requests.get(
+                "{}/simulations/1d/depthtime/simstrat/{}/{}/{}/{}".format(api, lake["name"], parameter,
+                                                                          start.strftime("%Y%m%d%H%M"),
+                                                                          end.strftime("%Y%m%d%H%M")))
+            if response.status_code == 200:
+                data = response.json()
+                with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
+                    temp_filename = temp_file.name
+                    json.dump(data, temp_file)
+                s3.upload_file(temp_filename, bucket_key,
+                               "simulations/simstrat/cache/{}/heatamp_{}.json".format(lake["name"], parameter))
+                os.remove(temp_filename)
+            else:
+                print("Failed to retrieve simulations",
+                      "{}/simulations/1d/depthtime/simstrat/{}/{}/{}/{}".format(api, lake["name"], parameter,
+                                                                                start.strftime("%Y%m%d%H%M"),
+                                                                                end.strftime("%Y%m%d%H%M")))
+
+        # Linegraphs
+        end = datetime.strptime(lake["end_date"], "%Y-%m-%d %H:%M")
+        start = end - timedelta(days=5)
+        depth = int(min(lake["depths"]))
+        for parameter in ["T"]:
+            response = requests.get(
+                "{}/simulations/1d/point/simstrat/{}/{}/{}/{}/{}".format(api, lake["name"], parameter,
+                                                                         start.strftime("%Y%m%d%H%M"),
+                                                                         end.strftime("%Y%m%d%H%M"), depth))
+            if response.status_code == 200:
+                data = response.json()
+                with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
+                    temp_filename = temp_file.name
+                    json.dump(data, temp_file)
+                s3.upload_file(temp_filename, bucket_key,
+                               "simulations/simstrat/cache/{}/linegraph_{}_{}.json".format(lake["name"], parameter,
+                                                                                           depth))
+                os.remove(temp_filename)
+            else:
+                print("Failed to retrieve simulations",
+                      "{}/simulations/1d/point/simstrat/{}/{}/{}/{}/{}".format(api, lake["name"], parameter,
+                                                                               start.strftime("%Y%m%d%H%M"),
+                                                                               end.strftime("%Y%m%d%H%M"), depth))
 
 
 def create_simstrat_doy(ds, **kwargs):
