@@ -107,7 +107,7 @@ def cache_simstrat_operational_data(ds, **kwargs):
                     temp_filename = temp_file.name
                     json.dump(data, temp_file)
                 s3.upload_file(temp_filename, bucket_key,
-                               "simulations/simstrat/cache/{}/heatamp_{}.json".format(lake["name"], parameter))
+                               "simulations/simstrat/cache/{}/heatmap_{}.json".format(lake["name"], parameter))
                 os.remove(temp_filename)
             else:
                 print("Failed to retrieve simulations",
@@ -118,6 +118,7 @@ def cache_simstrat_operational_data(ds, **kwargs):
         # Linegraphs
         end = datetime.strptime(lake["end_date"], "%Y-%m-%d %H:%M")
         start = end - timedelta(days=5)
+        start_year = datetime(datetime.now().year, 1, 1)
         depth = int(min(lake["depths"]))
         for parameter in ["T"]:
             response = requests.get(
@@ -137,6 +138,25 @@ def cache_simstrat_operational_data(ds, **kwargs):
                 print("Failed to retrieve simulations",
                       "{}/simulations/1d/point/simstrat/{}/{}/{}/{}/{}".format(api, lake["name"], parameter,
                                                                                start.strftime("%Y%m%d%H%M"),
+                                                                               end.strftime("%Y%m%d%H%M"), depth))
+
+            response = requests.get(
+                "{}/simulations/1d/point/simstrat/{}/{}/{}/{}/{}".format(api, lake["name"], parameter,
+                                                                         start_year.strftime("%Y%m%d%H%M"),
+                                                                         end.strftime("%Y%m%d%H%M"), depth))
+            if response.status_code == 200:
+                data = response.json()
+                with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
+                    temp_filename = temp_file.name
+                    json.dump(data, temp_file)
+                s3.upload_file(temp_filename, bucket_key,
+                               "simulations/simstrat/cache/{}/doy_{}_{}_currentyear.json".format(lake["name"],
+                                                                                                 parameter, depth))
+                os.remove(temp_filename)
+            else:
+                print("Failed to retrieve simulations",
+                      "{}/simulations/1d/point/simstrat/{}/{}/{}/{}/{}".format(api, lake["name"], parameter,
+                                                                               start_year.strftime("%Y%m%d%H%M"),
                                                                                end.strftime("%Y%m%d%H%M"), depth))
 
 
