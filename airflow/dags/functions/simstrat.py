@@ -131,8 +131,7 @@ def cache_simstrat_operational_data(ds, **kwargs):
                     temp_filename = temp_file.name
                     json.dump(data, temp_file)
                 s3.upload_file(temp_filename, bucket_key,
-                               "simulations/simstrat/cache/{}/linegraph_{}_{}.json".format(lake["name"], parameter,
-                                                                                           depth))
+                               "simulations/simstrat/cache/{}/linegraph_{}.json".format(lake["name"], parameter))
                 os.remove(temp_filename)
             else:
                 print("Failed to retrieve simulations",
@@ -140,24 +139,24 @@ def cache_simstrat_operational_data(ds, **kwargs):
                                                                                start.strftime("%Y%m%d%H%M"),
                                                                                end.strftime("%Y%m%d%H%M"), depth))
 
-            response = requests.get(
-                "{}/simulations/1d/point/simstrat/{}/{}/{}/{}/{}".format(api, lake["name"], parameter,
-                                                                         start_year.strftime("%Y%m%d%H%M"),
-                                                                         end.strftime("%Y%m%d%H%M"), depth))
-            if response.status_code == 200:
-                data = response.json()
-                with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
-                    temp_filename = temp_file.name
-                    json.dump(data, temp_file)
-                s3.upload_file(temp_filename, bucket_key,
-                               "simulations/simstrat/cache/{}/doy_{}_{}_currentyear.json".format(lake["name"],
-                                                                                                 parameter, depth))
-                os.remove(temp_filename)
-            else:
-                print("Failed to retrieve simulations",
-                      "{}/simulations/1d/point/simstrat/{}/{}/{}/{}/{}".format(api, lake["name"], parameter,
-                                                                               start_year.strftime("%Y%m%d%H%M"),
-                                                                               end.strftime("%Y%m%d%H%M"), depth))
+        # DOY current year
+        response = requests.get(
+            "{}/simulations/1d/point/simstrat/{}/{}/{}/{}/{}".format(api, lake["name"], parameter,
+                                                                     start_year.strftime("%Y%m%d%H%M"),
+                                                                     end.strftime("%Y%m%d%H%M"), depth))
+        if response.status_code == 200:
+            data = response.json()
+            with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
+                temp_filename = temp_file.name
+                json.dump(data, temp_file)
+            s3.upload_file(temp_filename, bucket_key,
+                           "simulations/simstrat/cache/{}/doy_currentyear.json".format(lake["name"]))
+            os.remove(temp_filename)
+        else:
+            print("Failed to retrieve simulations",
+                  "{}/simulations/1d/point/simstrat/{}/{}/{}/{}/{}".format(api, lake["name"], "T",
+                                                                           start_year.strftime("%Y%m%d%H%M"),
+                                                                           end.strftime("%Y%m%d%H%M"), depth))
 
 
 def create_simstrat_doy(ds, **kwargs):
@@ -215,7 +214,7 @@ def cache_simstrat_doy(ds, **kwargs):
                         temp_filename = temp_file.name
                         json.dump(data, temp_file)
                     s3.upload_file(temp_filename, bucket_key,
-                                   "simulations/simstrat/cache/{}/doy_{}_{}.json".format(lake["name"], parameter, d))
+                                   "simulations/simstrat/cache/{}/doy_{}.json".format(lake["name"], parameter))
                     os.remove(temp_filename)
                 else:
                     print("Failed to retrieve simulations/1d/doy/simstrat/{}/{}/{}".format(lake["name"], parameter, d))
