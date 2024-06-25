@@ -141,9 +141,9 @@ def cache_simstrat_operational_data(ds, **kwargs):
 
         # DOY current year
         response = requests.get(
-            "{}/simulations/1d/point/simstrat/{}/{}/{}/{}/{}".format(api, lake["name"], parameter,
-                                                                     start_year.strftime("%Y%m%d%H%M"),
-                                                                     end.strftime("%Y%m%d%H%M"), depth))
+            "{}/simulations/1d/point/simstrat/{}/{}/{}/{}/{}?resample=daily".format(api, lake["name"], parameter,
+                                                                                    start_year.strftime("%Y%m%d%H%M"),
+                                                                                    end.strftime("%Y%m%d%H%M"), depth))
         if response.status_code == 200:
             data = response.json()
             with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
