@@ -7,7 +7,8 @@ from airflow.models import Variable
 from airflow.utils.dates import days_ago
 
 from functions.email import report_failure
-from functions.simulate import get_last_sunday, get_end_date, get_today, get_restart, number_of_cores, cache_simulation_data
+from functions.simulate import (get_last_sunday, get_end_date, get_today, get_restart, number_of_cores,
+                                cache_simulation_data, format_simulation_directory)
 
 from airflow import DAG
 
@@ -45,8 +46,8 @@ def create_dag(dag_id, parameters):
         user_defined_macros={'filesystem': '/opt/airflow/filesystem',
                              'FILESYSTEM': Variable.get("FILESYSTEM"),
                              'model': 'delft3d-flow/' + parameters["simulation_id"],
-                             'docker': 'eawag/delft3d-flow:6.02.10.142612',
-                             'simulation_folder_prefix': 'eawag_delft3dflow60210142612_delft3dflow',
+                             'docker': parameters["docker"],
+                             'simulation_folder_prefix': format_simulation_directory(parameters["docker"]),
                              'start': get_last_sunday,
                              'end': get_end_date,
                              'today': get_today,

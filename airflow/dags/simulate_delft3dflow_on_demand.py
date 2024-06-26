@@ -17,7 +17,8 @@ Example config input
   "start": "20190109",
   "end": "20190110",
   "cores": 5,
-  "server_folder": "results_reprocess"
+  "server_folder": "results_reprocess",
+  'docker': 'eawag/delft3d-flow:6.02.10.142612'
 }
 """
 
@@ -52,8 +53,7 @@ dag = DAG(
     tags=['simulation', 'on demand'],
     user_defined_macros={'filesystem': '/opt/airflow/filesystem',
                          'FILESYSTEM': Variable.get("FILESYSTEM"),
-                         'docker': 'eawag/delft3d-flow:6.02.10.142612',
-                         'simulation_folder_prefix': 'eawag_delft3dflow60210142612_delft3dflow',
+                         'model': 'delft3dflow',
                          'bucket': 'alplakes-eawag',
                          'parse_profile': parse_profile,
                          'api': "http://eaw-alplakes2:8000", # Remote: http://eaw-alplakes2:8000, Local: http://172.17.0.1:8000
@@ -71,7 +71,7 @@ prepare_simulation_files = BashOperator(
     bash_command="mkdir -p {{ filesystem }}/git;"
                  "cd {{ filesystem }}/git;"
                  "git clone {{ simulation_repo_https }} && cd {{ simulation_repo_name }} || cd {{ simulation_repo_name }} && git stash && git pull;"
-                 "python src/main.py -m delft3d-flow/{{ dag_run.conf.lake }} -d {{ docker }} -s {{ dag_run.conf.start }} -e {{ dag_run.conf.end }} -a {{ api }} {{ parse_profile(dag_run.conf.profile) }}",
+                 "python src/main.py -m delft3d-flow/{{ dag_run.conf.lake }} -d {{ dag_run.conf.docker }} -s {{ dag_run.conf.start }} -e {{ dag_run.conf.end }} -a {{ api }} {{ parse_profile(dag_run.conf.profile) }}",
     on_failure_callback=report_failure,
     dag=dag,
 )
@@ -79,9 +79,9 @@ prepare_simulation_files = BashOperator(
 run_simulation = BashOperator(
     task_id='run_simulation',
     bash_command='docker run '
-                 '-v {{ FILESYSTEM }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ dag_run.conf.lake }}_{{ dag_run.conf.start }}_{{ dag_run.conf.end }}:/job '
+                 '-v {{ FILESYSTEM }}/git/{{ simulation_repo_name }}/runs/{{ dag_run.conf.docker | replace("/", "_") | replace(".", "") | replace(":", "") | replace("-", "") }}_{{ model }}_{{ dag_run.conf.lake }}_{{ dag_run.conf.start }}_{{ dag_run.conf.end }}:/job '
                  '--rm '
-                 '{{ docker }} '
+                 '{{ dag_run.conf.docker }} '
                  '-p {{ dag_run.conf.cores }} ',
     on_failure_callback=report_failure,
     dag=dag,
@@ -89,8 +89,8 @@ run_simulation = BashOperator(
 
 postprocess_simulation_output = BashOperator(
     task_id='postprocess_simulation_output',
-    bash_command="cd {{ filesystem }}/git/{{ simulation_repo_name }};"
-                 "python src/postprocess.py -f {{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ dag_run.conf.lake }}_{{ dag_run.conf.start }}_{{ dag_run.conf.end }} -d {{ docker }}",
+    bash_command='cd {{ filesystem }}/git/{{ simulation_repo_name }};'
+                 'python src/postprocess.py -f {{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ dag_run.conf.docker | replace("/", "_") | replace(".", "") | replace(":", "") | replace("-", "") }}_{{ model }}_{{ dag_run.conf.lake }}_{{ dag_run.conf.start }}_{{ dag_run.conf.end }} -d {{ dag_run.conf.docker }}',
     on_failure_callback=report_failure,
     dag=dag,
 )
@@ -105,7 +105,7 @@ process_restart_files = PythonOperator(
                    'restart': 'simulations/delft3d-flow/restart-files/{}/tri-rst.Simulation_Web_rst.{}.000000',
                    'filesystem': '{{ filesystem }}',
                    'simulation_repo_name': '{{ simulation_repo_name }}',
-                   'simulation_folder_prefix': '{{ simulation_folder_prefix }}'},
+                   'simulation_folder_prefix': '{{ dag_run.conf.docker | replace("/", "_") | replace(".", "") | replace(":", "") | replace("-", "") }}_{{ model }}'},
         on_failure_callback=report_failure,
         provide_context=True,
         dag=dag,
@@ -113,17 +113,17 @@ process_restart_files = PythonOperator(
 
 send_results = BashOperator(
         task_id='send_results',
-        bash_command="sshpass -p {{ API_PASSWORD }} scp -r "
-                     "-o StrictHostKeyChecking=no "
-                     "{{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ dag_run.conf.lake }}_{{ dag_run.conf.start }}_{{ dag_run.conf.end }}/postprocess/* "
-                     "{{ api_user }}@{{ api_server }}:{{ api_server_folder }}/{{ dag_run.conf.server_folder }}/{{ dag_run.conf.lake }}",
+        bash_command='sshpass -p {{ API_PASSWORD }} scp -r '
+                     '-o StrictHostKeyChecking=no '
+                     '{{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ dag_run.conf.docker | replace("/", "_") | replace(".", "") | replace(":", "") | replace("-", "") }}_{{ model }}_{{ dag_run.conf.lake }}_{{ dag_run.conf.start }}_{{ dag_run.conf.end }}/postprocess/* '
+                     '{{ api_user }}@{{ api_server }}:{{ api_server_folder }}/{{ dag_run.conf.server_folder }}/{{ dag_run.conf.lake }}',
         on_failure_callback=report_failure,
         dag=dag,
     )
 
 remove_results = BashOperator(
     task_id='remove_results',
-    bash_command="rm -rf {{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ dag_run.conf.lake }}_{{ dag_run.conf.start }}_{{ dag_run.conf.end }}",
+    bash_command='rm -rf {{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ dag_run.conf.docker | replace("/", "_") | replace(".", "") | replace(":", "") | replace("-", "") }}_{{ model }}_{{ dag_run.conf.lake }}_{{ dag_run.conf.start }}_{{ dag_run.conf.end }}',
     on_failure_callback=report_failure,
     on_success_callback=report_success,
     dag=dag,

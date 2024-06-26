@@ -45,6 +45,11 @@ def format_depth(number):
     return string
 
 
+def format_simulation_directory(docker):
+    folder = "{}_delft3dflow".format(docker)
+    return folder.replace("/", "_").replace(".", "").replace(":", "").replace("-", "")
+
+
 def number_of_cores(task_instance, cores):
     if task_instance.try_number == task_instance.max_tries + 1:
         return 1
