@@ -18,7 +18,7 @@ Example config input
   "end": "20190110",
   "cores": 5,
   "server_folder": "results_reprocess",
-  'docker': 'eawag/delft3d-flow:6.02.10.142612'
+  "docker": "eawag/delft3d-flow:6.02.10.142612"
 }
 """
 
