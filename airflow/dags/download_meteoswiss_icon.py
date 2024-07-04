@@ -34,7 +34,7 @@ dag = DAG(
     'download_meteoswiss_icon',
     default_args=default_args,
     description='Download ICON data from MeteoSwiss.',
-    schedule_interval="0 8 * * *",
+    schedule_interval="30 7 * * *",
     catchup=False,
     tags=['api', 'operational'],
 )
