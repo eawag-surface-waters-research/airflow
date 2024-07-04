@@ -20,6 +20,7 @@ Example config input
   "server_folder": "results_reprocess",
   "docker": "eawag/delft3d-flow:6.02.10.142612"
 }
+Use "profile": false for restarting from restart files.
 """
 
 default_args = {
