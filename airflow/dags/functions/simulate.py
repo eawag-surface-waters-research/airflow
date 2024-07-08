@@ -6,6 +6,7 @@ import tempfile
 import numpy as np
 from datetime import datetime, timedelta, timezone
 from dateutil.relativedelta import relativedelta, SU
+from airflow.utils.email import send_email
 
 
 def get_last_sunday(dt):
@@ -277,6 +278,21 @@ def cache_simulation_data(ds, **kwargs):
             json.dump(forecast, temp_file)
         s3.upload_file(temp_filename, bucket_key, "simulations/forecast2.json".format(model, lake))
         os.remove(temp_filename)
+
+
+def process_event_notifications(ds, **kwargs):
+    email_list = ['user1@gmail.com', 'user2@gmail.com']
+    # Include images by uploading them to S3 then adding a link in the html
+    for i in range(len(email_list)):
+        send_email(
+            to=str(email_list[i]),
+            subject='Email Header',
+            html_content=f"""
+                        Hi {email_list[i]}, <br>
+                        <p>This is the body of the email</p>
+                        <br> Thank You. <br>
+                    """
+        )
 
 
 def upload_restart_files(ds, **kwargs):
