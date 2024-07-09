@@ -113,7 +113,7 @@ def create_dag(dag_id, parameters):
         dag=dag,
     )
 
-    event_notifications = PythonOperator(
+    """event_notifications = PythonOperator(
         task_id='event_notifications',
         python_callable=process_event_notifications,
         op_kwargs={"lake": parameters["simulation_id"],
@@ -124,7 +124,7 @@ def create_dag(dag_id, parameters):
                    'AWS_KEY': Variable.get("AWS_SECRET_ACCESS_KEY")},
         on_failure_callback=report_failure,
         dag=dag,
-    )
+    )"""
 
     send_results = BashOperator(
         task_id='send_results',
@@ -163,7 +163,7 @@ def create_dag(dag_id, parameters):
         dag=dag,
     )
 
-    prepare_simulation_files >> run_simulation >> postprocess_simulation_output >> events_simulation_output >> event_notifications >> send_results >> remove_results >> cache_data >> update_datalakes
+    prepare_simulation_files >> run_simulation >> postprocess_simulation_output >> events_simulation_output >> send_results >> remove_results >> cache_data >> update_datalakes
 
     return dag
 
