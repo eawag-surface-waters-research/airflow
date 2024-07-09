@@ -47,7 +47,7 @@ def cache_simstrat_operational_data(ds, **kwargs):
         raise ValueError("Unable to access Simstrat metadata")
     lakes = next((d for d in response.json() if d.get('model') == "simstrat"), {"lakes": []})["lakes"]
 
-    response = requests.get("{}/simulations/forecast2.json".format(bucket))
+    response = requests.get("{}/simulations/forecast.json".format(bucket))
     if response.status_code == 200:
         forecast = response.json()
     elif response.status_code == 404:
@@ -82,7 +82,7 @@ def cache_simstrat_operational_data(ds, **kwargs):
     with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
         temp_filename = temp_file.name
         json.dump(forecast, temp_file)
-    s3.upload_file(temp_filename, bucket_key, "simulations/forecast2.json")
+    s3.upload_file(temp_filename, bucket_key, "simulations/forecast.json")
     os.remove(temp_filename)
 
     for lake in lakes:

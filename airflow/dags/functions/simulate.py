@@ -90,111 +90,6 @@ def cache_simulation_data(ds, **kwargs):
                       aws_access_key_id=aws_access_key_id,
                       aws_secret_access_key=aws_secret_access_key)
 
-    # ALPLAKES V1 - REMOVE AFTER SWITCH TO V2
-
-    response = requests.get("{}/static/website/metadata/{}.json".format(bucket, lake))
-    if response.status_code != 200:
-        raise ValueError("Unable to access {}/static/website/metadata/{}.json".format(bucket, lake))
-    lake_info = response.json()
-
-    response = requests.get("{}/simulations/metadata/{}/{}".format(api, model, lake))
-    if response.status_code != 200:
-        raise ValueError("Unable to access {}/simulations/metadata/{}/{}".format(api, model, lake))
-    lake_metadata = response.json()
-
-    max_date = datetime.strptime(lake_metadata["end_date"], '%Y-%m-%d %H:%M').replace(tzinfo=timezone.utc)
-    start_date = max_date + timedelta(days=lake_info["customPeriod"]["start"])
-    depth = closest(lake_metadata["depths"], lake_info["depth"])
-    start = start_date.strftime("%Y%m%d%H") + "00"
-    end = max_date.strftime("%Y%m%d%H") + "00"
-
-    # Cache Geometry
-    response = requests.get(
-        "{}/simulations/layer_alplakes/{}/{}/geometry/{}/{}/{}".format(api, model, lake, start, end, depth))
-    if response.status_code == 200:
-        geometry = response.text
-        with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
-            temp_filename = temp_file.name
-            temp_file.write(geometry)
-        s3.upload_file(temp_filename, bucket_key, "simulations/{}/metadata/{}/geometry.txt".format(model, lake))
-        os.remove(temp_filename)
-    else:
-        print("Failed to cache geometry")
-        print(response.text)
-
-    # Cache Temperature and Velocity
-    for parameter in ["temperature", "velocity", "thermocline"]:
-        response = requests.get(
-            "{}/simulations/layer_alplakes/{}/{}/{}/{}/{}/{}".format(api, model, lake, parameter, start, end,
-                                                                     format_depth(depth)))
-        if response.status_code == 200:
-            temperature = response.text
-            with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
-                temp_filename = temp_file.name
-                temp_file.write(temperature)
-            s3.upload_file(temp_filename, bucket_key,
-                           "simulations/{}/data/{}/{}_{}_{}_{}.txt".format(model, lake, parameter, start, end,
-                                                                           format_depth(depth)))
-            os.remove(temp_filename)
-        else:
-            print("Failed to cache {}".format(parameter))
-            print(response.text)
-
-    # Cache Lake Metadata
-    with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
-        temp_filename = temp_file.name
-        json.dump(lake_metadata, temp_file)
-    s3.upload_file(temp_filename, bucket_key, "simulations/{}/metadata/{}/metadata.json".format(model, lake))
-    os.remove(temp_filename)
-
-    response = requests.get("{}/static/website/metadata/list.json".format(bucket))
-    if response.status_code != 200:
-        raise ValueError("Unable to access {}/static/website/metadata/list.json".format(bucket))
-    lake_list = response.json()
-
-    start = datetime.now().replace(tzinfo=timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(
-        days=1)
-    forecast = {}
-    for lake_properties in lake_list:
-        try:
-            response = requests.get("{}/simulations/metadata/{}/{}".format(api, model, lake_properties["key"]))
-            if response.status_code != 200:
-                raise ValueError("Unable to access {}/simulations/metadata/{}/{}".format(api, model, lake_properties["key"]))
-            lake_metadata = response.json()
-            response = requests.get("{}/static/website/metadata/{}.json".format(bucket, lake_properties["key"]))
-            if response.status_code != 200:
-                raise ValueError("Unable to access {}/static/website/metadata/{}.json".format(bucket, lake_properties["key"]))
-            lake_info = response.json()
-            end = datetime.strptime(lake_metadata["end_date"] + ":00+00:00", '%Y-%m-%d %H:%M:%S%z')
-            response = requests.get(
-                "{}/simulations/layer/average_temperature/{}/{}/{}/{}/{}".format(api, model, lake_properties["key"],
-                                                                                 start.strftime("%Y%m%d%H%M"),
-                                                                                 end.strftime("%Y%m%d%H%M"),
-                                                                                 lake_info["depth"]))
-            if response.status_code != 200:
-                raise ValueError(
-                    "Unable to access {}/simulations/layer/average_temperature/{}/{}/{}/{}/{}".format(api, model,
-                                                                                                      lake_properties["key"],
-                                                                                                      start.strftime(
-                                                                                                          "%Y%m%d%H%M"),
-                                                                                                      end.strftime(
-                                                                                                          "%Y%m%d%H%M"),
-                                                                                                      lake_info[
-                                                                                                          "depth"]))
-            data = response.json()
-            forecast[lake_properties["key"]] = {"date": list(np.array(data["date"]) * 1000), "value": data["temperature"]}
-        except Exception as e:
-            print("Failed for Lake {}".format(lake_properties["key"]))
-            print(e)
-
-    with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
-        temp_filename = temp_file.name
-        json.dump(forecast, temp_file)
-    s3.upload_file(temp_filename, bucket_key, "simulations/forecast.json")
-    os.remove(temp_filename)
-
-    # ALPLAKES V2 - KEEP AFTER SWITCH TO V2
-
     # Collect information
     response = requests.get("{}/simulations/metadata/{}/{}".format(api, model, lake))
     if response.status_code != 200:
@@ -259,7 +154,7 @@ def cache_simulation_data(ds, **kwargs):
         )
     data = response.json()
 
-    response = requests.get("{}/simulations/forecast2.json".format(bucket))
+    response = requests.get("{}/simulations/forecast.json".format(bucket))
     if response.status_code == 200:
         forecast = response.json()
     elif response.status_code == 404:
@@ -276,7 +171,7 @@ def cache_simulation_data(ds, **kwargs):
         with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
             temp_filename = temp_file.name
             json.dump(forecast, temp_file)
-        s3.upload_file(temp_filename, bucket_key, "simulations/forecast2.json".format(model, lake))
+        s3.upload_file(temp_filename, bucket_key, "simulations/forecast.json".format(model, lake))
         os.remove(temp_filename)
 
 
