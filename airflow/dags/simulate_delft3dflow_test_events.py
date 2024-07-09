@@ -60,6 +60,7 @@ events_simulation_output = BashOperator(
                      "git clone {{ simulation_repo_https }} && cd {{ simulation_repo_name }} || cd {{ simulation_repo_name }} && git stash && git pull;"
                      "python src/events.py -f {{ filesystem }}/{{ dag_run.conf.folder }} -d {{ dag_run.conf.docker }}",
         on_failure_callback=report_failure,
+        on_success_callback=report_success,
         dag=dag,
     )
 
