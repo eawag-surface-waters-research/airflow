@@ -98,9 +98,9 @@ def cache_simulation_data(ds, **kwargs):
 
     default_depth = 1
     default_period = -7
-    response = requests.get("{}/static/website/metadata/{}.json".format(bucket, lake))
+    response = requests.get("{}/static/website/metadata/master/{}.json".format(bucket, lake))
     if response.status_code != 200:
-        raise ValueError("Unable to access {}/static/website/metadata/{}.json".format(bucket, lake))
+        raise ValueError("Unable to access {}/static/website/metadata/master/{}.json".format(bucket, lake))
     lake_info = response.json()
     try:
         default_depth = lake_info["metadata"]["default_depth"]
