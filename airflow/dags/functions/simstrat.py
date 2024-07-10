@@ -11,6 +11,23 @@ def iso_to_unix(input_time):
     return int(datetime.fromisoformat(input_time).astimezone(timezone.utc).timestamp()) * 1000
 
 
+def validate_simstrat_operational_data(ds, **kwargs):
+    api = kwargs["api"]
+    response = requests.get("{}/simulations/1d/metadata".format(api))
+    if response.status_code != 200:
+        raise ValueError("Unable to access Simstrat metadata")
+    lakes = next((d for d in response.json() if d.get('model') == "simstrat"), {"lakes": []})["lakes"]
+    failed = []
+    now = datetime.now(timezone.utc)
+    midnight_today = datetime(year=now.year, month=now.month, day=now.day, tzinfo=timezone.utc)
+    forecast_date = midnight_today + timedelta(days=4)
+    for lake in lakes:
+        if datetime.strptime(lake["end_date"], "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc) < forecast_date:
+            failed.append(lake["name"])
+    if len(failed) > 0:
+        raise ValueError("Simstrat simulation failed for: {}".format(", ".join(failed)))
+
+
 def cache_simstrat_operational_data(ds, **kwargs):
     api = kwargs["api"]
     bucket = kwargs["bucket"]
@@ -218,3 +235,4 @@ def cache_simstrat_doy(ds, **kwargs):
                     os.remove(temp_filename)
                 else:
                     print("Failed to retrieve simulations/1d/doy/simstrat/{}/{}/{}".format(lake["name"], parameter, d))
+

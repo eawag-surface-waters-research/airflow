@@ -5,7 +5,7 @@ from airflow.operators.python_operator import PythonOperator
 from airflow.models import Variable
 from airflow.utils.dates import days_ago
 
-from functions.simstrat import cache_simstrat_operational_data
+from functions.simstrat import cache_simstrat_operational_data, validate_simstrat_operational_data
 
 from functions.email import report_failure
 
@@ -72,4 +72,12 @@ cache_data = PythonOperator(
         dag=dag,
     )
 
-run_simulation >> cache_data
+validate_results = PythonOperator(
+        task_id='validate_results',
+        python_callable=validate_simstrat_operational_data,
+        op_kwargs={"api": "https://alplakes-api.eawag.ch"},
+        on_failure_callback=report_failure,
+        dag=dag,
+    )
+
+run_simulation >> cache_data >> validate_results
