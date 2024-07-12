@@ -239,7 +239,7 @@ def collect_water_temperature(ds, **kwargs):
                             "icon": "lake"
                         },
                         "geometry": {
-                            "coordinates": [metadata["longitude"], metadata["latitude"]],
+                            "coordinates": [float(metadata["longitude"]), float(metadata["latitude"])],
                             "type": "Point"}})
     except Exception as e:
         print(e)
