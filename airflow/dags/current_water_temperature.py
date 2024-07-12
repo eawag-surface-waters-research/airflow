@@ -80,6 +80,7 @@ class TableHTMLParser(HTMLParser):
         if self.in_td:
             self.current_row.append(data.strip())
 
+
 def parse_html_table(html_table):
     parser = TableHTMLParser()
     parser.feed(html_table)
@@ -102,11 +103,15 @@ def collect_water_temperature(ds, **kwargs):
 
     # BAFU
     try:
+        lookup = {"2606": "geneva"}
         response = requests.get("https://www.hydrodaten.admin.ch/web-hydro-maps/hydro_sensor_temperature.geojson")
         if response.status_code == 200:
             for f in response.json()["features"]:
                 lat, lng = ch1903_plus_to_latlng(f["geometry"]["coordinates"][0], f["geometry"]["coordinates"][1])
                 time = datetime.strptime(f["properties"]["last_measured_at"], "%Y-%m-%dT%H:%M:%S.%f%z").timestamp()
+                lake = False
+                if str(f["properties"]["key"]) in lookup:
+                    lake = lookup[str(f["properties"]["key"])]
                 features.append({
                     "type": "Feature",
                     "id": "bafu_" + f["properties"]["key"],
@@ -117,7 +122,8 @@ def collect_water_temperature(ds, **kwargs):
                         "url": "https://www.hydrodaten.admin.ch/en/seen-und-fluesse/stations/{}".format(
                             f["properties"]["key"]),
                         "source": "BAFU Hydrodaten",
-                        "icon": "river"
+                        "icon": "river",
+                        "lake": lake
                     },
                     "geometry": {
                         "coordinates": [lng, lat],
@@ -147,7 +153,8 @@ def collect_water_temperature(ds, **kwargs):
                             "last_value": float(f["L1_ts_value"]),
                             "url": "http://www.hydrodaten.tg.ch/app/index.html#{}".format(f["metadata_station_no"]),
                             "source": "Kanton Thurgau",
-                            "icon": icon
+                            "icon": icon,
+                            "lake": "constance"
                         },
                         "geometry": {
                             "coordinates": [float(f["metadata_station_longitude"]),
@@ -163,22 +170,27 @@ def collect_water_temperature(ds, **kwargs):
             "Zürichsee-Oberrieden": {
                 "id": "zurich_502",
                 "icon": "lake",
+                "lake": "zurich",
                 "coordinates": [8.584007, 47.272856]},
             "Limmat-Zch. KW Letten": {
                 "id": "zurich_578",
                 "icon": "river",
+                "lake": "zurich",
                 "coordinates": [8.531311, 47.387810]},
             "Glatt-Wuhrbrücke": {
                 "id": "zurich_531",
                 "icon": "river",
+                "lake": "greifensee",
                 "coordinates": [8.655083, 47.373080]},
             "Türlersee": {
                 "id": "zurich_552",
                 "icon": "river",
+                "lake": "turlersee",
                 "coordinates": [8.498728, 47.274612]},
             "Sihl-Blattwag": {
                 "id": "zurich_547",
                 "icon": "river",
+                "lake": False,
                 "coordinates": [8.674020, 47.174593]}
         }
         response = requests.get("https://hydroproweb.zh.ch/Listen/AktuelleWerte/AktWassertemp.html")
@@ -197,7 +209,8 @@ def collect_water_temperature(ds, **kwargs):
                             "last_value": float(row.iloc[4]),
                             "url": "https://www.zh.ch/de/umwelt-tiere/wasser-gewaesser/messdaten/wassertemperaturen.html",
                             "source": "Kanton Zurich",
-                            "icon": stations[label]["icon"]
+                            "icon": stations[label]["icon"],
+                            "lake": stations[label]["lake"]
                         },
                         "geometry": {
                             "coordinates": stations[label]["coordinates"],
@@ -209,13 +222,13 @@ def collect_water_temperature(ds, **kwargs):
     # Datalakes
     try:
         stations = [
-            {"id": 1264, "parameters": "y", "label": "Kastanienbaum"},
-            {"id": 515, "parameters": "z?x_index=3", "label": "Greifensee CTD"},
-            {"id": 597, "parameters": "y", "label": "Buchillon"},
-            {"id": 448, "parameters": "z?x_index=0", "label": "LéXPLORE Chain"},
-            {"id": 1046, "parameters": "z?x_index=0", "label": "Hallwil Chain"},
-            {"id": 956, "parameters": "z?x_index=0", "label": "Murten Chain"},
-            {"id": 1077, "parameters": "z?x_index=0", "label": "Aegeri Idronaut"},
+            {"id": 1264, "parameters": "y", "label": "Kastanienbaum", "lake": "lucern"},
+            {"id": 515, "parameters": "z?x_index=3", "label": "Greifensee CTD", "lake": "greifensee"},
+            {"id": 597, "parameters": "y", "label": "Buchillon", "lake": "geneva"},
+            {"id": 448, "parameters": "z?x_index=0", "label": "LéXPLORE Chain", "lake": "geneva"},
+            {"id": 1046, "parameters": "z?x_index=0", "label": "Hallwil Chain", "lake": "hallwil"},
+            {"id": 956, "parameters": "z?x_index=0", "label": "Murten Chain", "lake": "murten"},
+            {"id": 1077, "parameters": "z?x_index=0", "label": "Aegeri Idronaut", "lake": "ageri"},
         ]
         for station in stations:
             response = requests.get(
@@ -236,10 +249,11 @@ def collect_water_temperature(ds, **kwargs):
                             "last_value": data["value"],
                             "url": "https://www.datalakes-eawag.ch/datadetail/{}".format(station["id"]),
                             "source": "Datalakes",
-                            "icon": "lake"
+                            "icon": "lake",
+                            "lake": station["lake"]
                         },
                         "geometry": {
-                            "coordinates": [float(metadata["longitude"]), float(metadata["latitude"])],
+                            "coordinates": [metadata["longitude"], metadata["latitude"]],
                             "type": "Point"}})
     except Exception as e:
         print(e)
