@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import os
 import json
 import boto3
@@ -98,99 +98,152 @@ def collect_water_temperature(ds, **kwargs):
                       aws_secret_access_key=aws_secret_access_key)
 
     features = []
+    failed = []
 
     # BAFU
-    response = requests.get("https://www.hydrodaten.admin.ch/web-hydro-maps/hydro_sensor_temperature.geojson")
-    if response.status_code == 200:
-        for f in response.json()["features"]:
-            lat, lng = ch1903_plus_to_latlng(f["geometry"]["coordinates"][0], f["geometry"]["coordinates"][1])
-            time = datetime.strptime(f["properties"]["last_measured_at"], "%Y-%m-%dT%H:%M:%S.%f%z").timestamp()
-            features.append({
-                "type": "Feature",
-                "id": "bafu_" + f["properties"]["key"],
-                "properties": {
-                    "label": f["properties"]["label"],
-                    "last_time": time,
-                    "last_value": float(f["properties"]["last_value"]),
-                    "url": "https://www.hydrodaten.admin.ch/en/seen-und-fluesse/stations/{}".format(
-                        f["properties"]["key"]),
-                    "source": "BAFU Hydrodaten",
-                    "icon": "river"
-                },
-                "geometry": {
-                    "coordinates": [lng, lat],
-                    "type": "Point"}})
+    try:
+        response = requests.get("https://www.hydrodaten.admin.ch/web-hydro-maps/hydro_sensor_temperature.geojson")
+        if response.status_code == 200:
+            for f in response.json()["features"]:
+                lat, lng = ch1903_plus_to_latlng(f["geometry"]["coordinates"][0], f["geometry"]["coordinates"][1])
+                time = datetime.strptime(f["properties"]["last_measured_at"], "%Y-%m-%dT%H:%M:%S.%f%z").timestamp()
+                features.append({
+                    "type": "Feature",
+                    "id": "bafu_" + f["properties"]["key"],
+                    "properties": {
+                        "label": f["properties"]["label"],
+                        "last_time": time,
+                        "last_value": float(f["properties"]["last_value"]),
+                        "url": "https://www.hydrodaten.admin.ch/en/seen-und-fluesse/stations/{}".format(
+                            f["properties"]["key"]),
+                        "source": "BAFU Hydrodaten",
+                        "icon": "river"
+                    },
+                    "geometry": {
+                        "coordinates": [lng, lat],
+                        "type": "Point"}})
+    except Exception as e:
+        print(e)
+        failed.append("BAFU")
 
     # Thurgau
-    ids = ["M1090", "F1150", "00005"]
-    response = requests.get("http://www.hydrodaten.tg.ch/data/internet/layers/30/index.json")
-    if response.status_code == 200:
-        for f in response.json():
-            if f["metadata_station_no"] in ids:
-                time = datetime.strptime(f["L1_timestamp"], "%Y-%m-%dT%H:%M:%S.%f%z").timestamp()
-                if f["metadata_river_name"] == "":
-                    icon = "lake"
-                else:
-                    icon = "river"
-                features.append({
-                    "type": "Feature",
-                    "id": "thurgau_" + f["metadata_station_no"],
-                    "properties": {
-                        "label": f["metadata_station_name"],
-                        "last_time": time,
-                        "last_value": float(f["L1_ts_value"]),
-                        "url": "http://www.hydrodaten.tg.ch/app/index.html#{}".format(f["metadata_station_no"]),
-                        "source": "Kanton Thurgau",
-                        "icon": icon
-                    },
-                    "geometry": {
-                        "coordinates": [float(f["metadata_station_longitude"]), float(f["metadata_station_latitude"])],
-                        "type": "Point"}})
+    try:
+        ids = ["M1090", "F1150", "00005"]
+        response = requests.get("http://www.hydrodaten.tg.ch/data/internet/layers/30/index.json")
+        if response.status_code == 200:
+            for f in response.json():
+                if f["metadata_station_no"] in ids:
+                    time = datetime.strptime(f["L1_timestamp"], "%Y-%m-%dT%H:%M:%S.%f%z").timestamp()
+                    if f["metadata_river_name"] == "":
+                        icon = "lake"
+                    else:
+                        icon = "river"
+                    features.append({
+                        "type": "Feature",
+                        "id": "thurgau_" + f["metadata_station_no"],
+                        "properties": {
+                            "label": f["metadata_station_name"],
+                            "last_time": time,
+                            "last_value": float(f["L1_ts_value"]),
+                            "url": "http://www.hydrodaten.tg.ch/app/index.html#{}".format(f["metadata_station_no"]),
+                            "source": "Kanton Thurgau",
+                            "icon": icon
+                        },
+                        "geometry": {
+                            "coordinates": [float(f["metadata_station_longitude"]),
+                                            float(f["metadata_station_latitude"])],
+                            "type": "Point"}})
+    except Exception as e:
+        print(e)
+        failed.append("Thurgau")
 
     # Zurich
-    stations = {
-        "Zürichsee-Oberrieden": {
-            "id": "zurich_502",
-            "icon": "lake",
-            "coordinates": [8.584007, 47.272856]},
-        "Limmat-Zch. KW Letten": {
-            "id": "zurich_578",
-            "icon": "river",
-            "coordinates": [8.531311, 47.387810]},
-        "Glatt-Wuhrbrücke": {
-            "id": "zurich_531",
-            "icon": "river",
-            "coordinates": [8.655083, 47.373080]},
-        "Türlersee": {
-            "id": "zurich_552",
-            "icon": "river",
-            "coordinates": [8.498728, 47.274612]},
-        "Sihl-Blattwag": {
-            "id": "zurich_547",
-            "icon": "river",
-            "coordinates": [8.674020, 47.174593]}
-    }
-    response = requests.get("https://hydroproweb.zh.ch/Listen/AktuelleWerte/AktWassertemp.html")
-    if response.status_code == 200:
-        df = parse_html_table(response.text.encode('latin-1').decode('utf-8'))
-        for index, row in df.iterrows():
-            label = row.iloc[0]
-            if label in stations:
-                time = datetime.strptime(str(row.iloc[3] + row.iloc[2]), "%d.%m.%Y%H:%M").timestamp()
-                features.append({
-                    "type": "Feature",
-                    "id": stations[label]["id"],
-                    "properties": {
-                        "label": label,
-                        "last_time": time,
-                        "last_value": float(row.iloc[4]),
-                        "url": "https://www.zh.ch/de/umwelt-tiere/wasser-gewaesser/messdaten/wassertemperaturen.html",
-                        "source": "Kanton Zurich",
-                        "icon": stations[label]["icon"]
-                    },
-                    "geometry": {
-                        "coordinates": stations[label]["coordinates"],
-                        "type": "Point"}})
+    try:
+        stations = {
+            "Zürichsee-Oberrieden": {
+                "id": "zurich_502",
+                "icon": "lake",
+                "coordinates": [8.584007, 47.272856]},
+            "Limmat-Zch. KW Letten": {
+                "id": "zurich_578",
+                "icon": "river",
+                "coordinates": [8.531311, 47.387810]},
+            "Glatt-Wuhrbrücke": {
+                "id": "zurich_531",
+                "icon": "river",
+                "coordinates": [8.655083, 47.373080]},
+            "Türlersee": {
+                "id": "zurich_552",
+                "icon": "river",
+                "coordinates": [8.498728, 47.274612]},
+            "Sihl-Blattwag": {
+                "id": "zurich_547",
+                "icon": "river",
+                "coordinates": [8.674020, 47.174593]}
+        }
+        response = requests.get("https://hydroproweb.zh.ch/Listen/AktuelleWerte/AktWassertemp.html")
+        if response.status_code == 200:
+            df = parse_html_table(response.text.encode('latin-1').decode('utf-8'))
+            for index, row in df.iterrows():
+                label = row.iloc[0]
+                if label in stations:
+                    time = datetime.strptime(str(row.iloc[3] + row.iloc[2]), "%d.%m.%Y%H:%M").timestamp()
+                    features.append({
+                        "type": "Feature",
+                        "id": stations[label]["id"],
+                        "properties": {
+                            "label": label,
+                            "last_time": time,
+                            "last_value": float(row.iloc[4]),
+                            "url": "https://www.zh.ch/de/umwelt-tiere/wasser-gewaesser/messdaten/wassertemperaturen.html",
+                            "source": "Kanton Zurich",
+                            "icon": stations[label]["icon"]
+                        },
+                        "geometry": {
+                            "coordinates": stations[label]["coordinates"],
+                            "type": "Point"}})
+    except Exception as e:
+        print(e)
+        failed.append("Zurich")
+
+    # Datalakes
+    try:
+        stations = [
+            {"id": 1264, "parameters": "y", "label": "Kastanienbaum"},
+            {"id": 515, "parameters": "z?x_index=3", "label": "Greifensee CTD"},
+            {"id": 597, "parameters": "y", "label": "Buchillon"},
+            {"id": 448, "parameters": "z?x_index=0", "label": "LéXPLORE Chain"},
+            {"id": 1046, "parameters": "z?x_index=0", "label": "Hallwil Chain"},
+            {"id": 956, "parameters": "z?x_index=0", "label": "Murten Chain"},
+            {"id": 1077, "parameters": "z?x_index=0", "label": "Aegeri Idronaut"},
+        ]
+        for station in stations:
+            response = requests.get(
+                "https://api.datalakes-eawag.ch/data/{}/{}".format(station["id"], station["parameters"]))
+            if response.status_code == 200:
+                data = response.json()
+                response = requests.get("https://api.datalakes-eawag.ch/datasets/{}".format(station["id"]))
+                if response.status_code == 200:
+                    metadata = response.json()
+                    time = datetime.strptime(data["time"], "%Y-%m-%dT%H:%M:%S.%fZ").replace(
+                        tzinfo=timezone.utc).timestamp()
+                    features.append({
+                        "type": "Feature",
+                        "id": "datalakes_{}".format(station["id"]),
+                        "properties": {
+                            "label": station["label"],
+                            "last_time": time,
+                            "last_value": data["value"],
+                            "url": "https://www.datalakes-eawag.ch/datadetail/{}".format(station["id"]),
+                            "source": "Datalakes",
+                            "icon": "lake"
+                        },
+                        "geometry": {
+                            "coordinates": [metadata["longitude"], metadata["latitude"]],
+                            "type": "Point"}})
+    except Exception as e:
+        print(e)
+        failed.append("Datalakes")
 
     response = requests.get("{}/insitu/summary/water_temperature.geojson".format(bucket))
     if response.status_code == 200:
@@ -212,6 +265,9 @@ def collect_water_temperature(ds, **kwargs):
         json.dump(geojson, temp_file)
     s3.upload_file(temp_filename, bucket_key, "insitu/summary/water_temperature.geojson")
     os.remove(temp_filename)
+
+    if len(failed) > 0:
+        raise ValueError("Failed for {}".format(", ".join(failed)))
 
 
 water_temperature = PythonOperator(
