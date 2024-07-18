@@ -41,7 +41,7 @@ dag = DAG(
     'current_water_temperature',
     default_args=default_args,
     description='Collect current water temperature values',
-    schedule_interval='0 */1 * * *',
+    schedule_interval='*/20 * * * *',
     catchup=False,
     tags=['insitu', 'monitoring'],
 )
@@ -103,7 +103,7 @@ def collect_water_temperature(ds, **kwargs):
 
     # BAFU
     try:
-        lookup = {"2606": "geneva"}
+        lookup = {"2606": "geneva", "2104": "walensee", "2152": "lucerne", "2030": "thun", "2457": "brienz"}
         response = requests.get("https://www.hydrodaten.admin.ch/web-hydro-maps/hydro_sensor_temperature.geojson")
         if response.status_code == 200:
             for f in response.json()["features"]:
