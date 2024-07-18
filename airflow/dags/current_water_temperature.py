@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 import os
 import json
+import pytz
 import boto3
 import requests
 import tempfile
@@ -100,6 +101,7 @@ def collect_water_temperature(ds, **kwargs):
 
     features = []
     failed = []
+    swiss_timezone = pytz.timezone("Europe/Zurich")
 
     # BAFU
     try:
@@ -199,7 +201,8 @@ def collect_water_temperature(ds, **kwargs):
             for index, row in df.iterrows():
                 label = row.iloc[0]
                 if label in stations:
-                    time = datetime.strptime(str(row.iloc[3] + row.iloc[2]), "%d.%m.%Y%H:%M").timestamp()
+                    time = datetime.strptime(str(row.iloc[3] + row.iloc[2]), "%d.%m.%Y%H:%M")
+                    time = swiss_timezone.localize(time).timestamp()
                     features.append({
                         "type": "Feature",
                         "id": stations[label]["id"],
@@ -222,7 +225,7 @@ def collect_water_temperature(ds, **kwargs):
     # Datalakes
     try:
         stations = [
-            {"id": 1264, "parameters": "y", "label": "Kastanienbaum", "lake": "lucern"},
+            {"id": 1264, "parameters": "y", "label": "Kastanienbaum", "lake": "lucerne"},
             {"id": 515, "parameters": "z?x_index=3", "label": "Greifensee CTD", "lake": "greifensee"},
             {"id": 597, "parameters": "y", "label": "Buchillon", "lake": "geneva"},
             {"id": 448, "parameters": "z?x_index=0", "label": "LéXPLORE Chain", "lake": "geneva"},
