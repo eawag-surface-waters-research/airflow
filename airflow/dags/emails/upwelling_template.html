@@ -1,0 +1,52 @@
+<h6
+  style="
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 16px;
+    color: #9ca3ad;
+    margin: 44px 0 0 0;
+  "
+>
+  Upwelling
+</h6>
+<div
+  class="x_group-header"
+  style="
+    font-weight: 400;
+    border-top: 1px solid #e7ebee;
+    margin-top: 12px;
+    padding-top: 20px;
+  "
+>
+  <table>
+    <tbody>
+      <tr>
+        <th>Period</th>
+        <td>{{ period }}</td>
+      </tr>
+      <tr>
+        <th>Peak</th>
+        <td>{{ peak }}</td>
+      </tr>
+      <tr>
+        <th>Max Centroid</th>
+        <td>{{ max_centroid }}</td>
+      </tr>
+    </tbody>
+  </table>
+  <img
+    src="https://alplakes-eawag.s3.eu-central-1.amazonaws.com/simulations/delft3d-flow/events/{{ lake }}/images/upwelling_{{ img }}.png"
+    alt="Sentry"
+    style="font-weight: 400; max-width: 100%; max-height: 400px"
+  />
+  <p
+    style="
+      font-weight: 400;
+      font-size: 16px;
+      line-height: 24px;
+      margin: 0 0 8px;
+    "
+  >
+    {{ description }}
+  </p>
+</div>

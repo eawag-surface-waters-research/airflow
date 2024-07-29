@@ -7,6 +7,7 @@ import numpy as np
 from datetime import datetime, timedelta, timezone
 from dateutil.relativedelta import relativedelta, SU
 from airflow.utils.email import send_email
+from jinja2 import Template
 
 
 def get_last_sunday(dt):
@@ -176,18 +177,106 @@ def cache_simulation_data(ds, **kwargs):
 
 
 def process_event_notifications(ds, **kwargs):
-    email_list = ['user1@gmail.com', 'user2@gmail.com']
-    # Include images by uploading them to S3 then adding a link in the html
-    for i in range(len(email_list)):
-        send_email(
-            to=str(email_list[i]),
-            subject='Email Header',
-            html_content=f"""
-                        Hi {email_list[i]}, <br>
-                        <p>This is the body of the email</p>
-                        <br> Thank You. <br>
-                    """
-        )
+    bucket = kwargs["bucket"]
+    folder = kwargs["folder"]
+    lake = kwargs["lake"]
+    name = kwargs["name"]
+    model = kwargs["model"]
+    email_list = kwargs["email_list"]
+    aws_access_key_id = kwargs["AWS_ID"]
+    aws_secret_access_key = kwargs["AWS_KEY"]
+    bucket_key = bucket.split(".")[0].split("//")[1]
+
+    s3 = boto3.client("s3",
+                      aws_access_key_id=aws_access_key_id,
+                      aws_secret_access_key=aws_secret_access_key)
+
+    os.path.join(os.path.dirname(__file__),  'events_email_template.html')
+
+    now = datetime.now().replace(tzinfo=timezone.utc)
+    now = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    last_sunday = (now + timedelta(days=1)) + relativedelta(weekday=SU(-1))
+    templates = {
+        "email": os.path.join(os.path.dirname(__file__), "..", 'emails/events_template.html'),
+        "upwelling": os.path.join(os.path.dirname(__file__), "..", 'emails/upwelling_template.html'),
+        "localisedCurrents": os.path.join(os.path.dirname(__file__), "..", 'emails/localisedCurrents_template.html')
+    }
+    events_html = ""
+    if os.path.isfile(os.path.join(folder, "events.json")):
+        with open(os.path.join(folder, "events.json")) as f:
+            events = json.load(f)
+        if len(events) > 0:
+            response = requests.get("{}/simulations/{}/events/{}/events.json".format(bucket, model, lake))
+            if response.status_code == 200:
+                data = response.json()
+                event_list = []
+                for old_event in data:
+                    if datetime.fromisoformat(old_event["start"]) < last_sunday:
+                        event_list.append(old_event)
+                event_list = event_list + events
+            else:
+                event_list = events
+
+            with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
+                temp_filename = temp_file.name
+                json.dump(event_list, temp_file)
+            s3.upload_file(temp_filename, bucket_key, "simulations/{}/events/{}/events.json".format(model, lake))
+            os.remove(temp_filename)
+
+            if os.path.exists(os.path.join(folder, "events")):
+                for file in os.listdir(os.path.join(folder, "events")):
+                    if file.endswith(".png"):
+                        s3.upload_file(os.path.join(folder, "events", file), bucket_key,
+                                       "simulations/{}/events/{}/events/images/{}.json".format(model, lake, file))
+
+            for event in events:
+                if datetime.fromisoformat(event["end"]) > now:
+                    with open(templates[event["type"]]) as file_:
+                        template = Template(file_.read())
+                    if event["type"] == "upwelling":
+                        context = {
+                            "lake": lake,
+                            "period": datetime.fromisoformat(event["start"]).strftime(
+                                "%H:%M %d %B %Y") + " - " + datetime.fromisoformat(event["end"]).strftime(
+                                "%H:%M %d %B %Y"),
+                            "peak": datetime.fromisoformat(event["properties"]["peak"]).strftime("%H:%M %d %B %Y"),
+                            "max_centroid": str(round(event["properties"]["max_centroid"], 2)) + "°C",
+                            "img": event["properties"]["peak"],
+                            "description": event["description"]
+                        }
+                    elif event["type"] == "localisedCurrents":
+                        context = {
+                            "lake": lake,
+                            "period": datetime.fromisoformat(event["start"]).strftime(
+                                "%H:%M %d %B %Y") + " - " + datetime.fromisoformat(event["end"]).strftime(
+                                "%H:%M %d %B %Y"),
+                            "img": event["start"],
+                            "description": event["description"]
+                        }
+                    else:
+                        print("Unrecognised event", event["type"])
+                        continue
+                    events_html = events_html + template.render(context) + "\n"
+                else:
+                    print("Event in the past")
+
+            if events_html != "":
+                with open(templates["email"]) as file_:
+                    template = Template(file_.read())
+                context = {
+                    "lake": lake,
+                    "name": name,
+                    "today": now.strftime("%d.%m.%y"),
+                    "end_date": (now + timedelta(days=4)).strftime("%d.%m.%y"),
+                    "events": events_html
+                }
+                email_html = template.render(context)
+                for i in range(len(email_list)):
+                    send_email(
+                        to=str(email_list[i]),
+                        subject='Alplakes - New events predicted for {}'.format(lake),
+                        html_content=email_html
+                    )
 
 
 def upload_restart_files(ds, **kwargs):

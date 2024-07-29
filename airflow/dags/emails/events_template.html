@@ -1,0 +1,176 @@
+<table
+  class="x_main"
+  style="
+    font-weight: 400;
+    width: 100%;
+    border-collapse: separate;
+    font-size: 16px;
+    font-family: 'Lato', 'Helvetica Neue', helvetica, sans-serif;
+    background-color: #fff;
+    color: #2f2936;
+    max-width: 700px;
+    border-radius: 4px;
+    border: 1px solid #c7d0d4;
+    border-spacing: 0;
+    margin: 15px auto;
+    padding: 0;
+  "
+>
+  <tbody>
+    <tr style="font-weight: 400">
+      <td style="font-weight: 400; text-align: center; margin: 0; padding: 0">
+        <div
+          class="x_header"
+          style="
+            font-weight: 400;
+            font-size: 14px;
+            border-bottom: 1px solid rgb(222, 231, 235);
+            padding: 23px 0px;
+            font-family: Lato, 'Helvetica Neue', helvetica, sans-serif, serif,
+              EmojiFont;
+          "
+        >
+          <div
+            class="x_container"
+            style="
+              font-weight: 400;
+              max-width: 600px;
+              text-align: left;
+              margin: 0 auto;
+              padding: 0 20px;
+            "
+          >
+            <a
+              href="https://www.alplakes.eawag.ch/{{ lake }}"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="x_btn"
+              style="
+                font-weight: 600;
+                color: #fff;
+                text-decoration: none;
+                background-color: #44bca7;
+                border: 1px solid #44bca7;
+                line-height: 18px;
+                border-radius: 4px;
+                display: inline-block;
+                font-size: 16px;
+                float: right;
+                padding: 8px 15px;
+              "
+              >View on Alplakes</a
+            >
+            <h1
+              style="
+                font-weight: normal;
+                font-size: 38px;
+                line-height: 42px;
+                color: #000;
+                letter-spacing: -1px;
+                margin: 0;
+                padding: 0;
+              "
+            >
+              <a
+                href="https://www.alplakes.eawag.ch"
+                target="_blank"
+                rel="noopener noreferrer"
+                style="font-weight: 500; color: #4674ca; text-decoration: none"
+                ><img
+                  src="https://alplakes-eawag.s3.eu-central-1.amazonaws.com/static/logo/alplakes.png"
+                  width="155px"
+                  alt="Sentry"
+                  style="font-weight: 400"
+              /></a>
+            </h1>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr style="font-weight: 400">
+      <td style="font-weight: 400; text-align: center; margin: 0; padding: 0">
+        <div
+          class="x_container"
+          style="
+            font-weight: 400;
+            max-width: 600px;
+            text-align: left;
+            margin: 0px auto;
+            padding: 0px 20px;
+            font-family: Lato, 'Helvetica Neue', helvetica, sans-serif, serif,
+              EmojiFont;
+          "
+        >
+          <div
+            class="x_inner"
+            style="
+              font-weight: 400;
+              background-color: #fff;
+              padding: 30px 0 20px;
+            "
+          >
+            <h2 style="font-weight: 700; font-size: 22px; margin-bottom: 5px">
+              New events
+            </h2>
+            <div
+              style="
+                font-weight: 400;
+                color: #7c7c7c;
+                font-size: 14px;
+                margin-bottom: 15px;
+              "
+            >
+              The following events have been predicted in {{ name }} between
+              {{ today }} and {{ end_date }}
+            </div>
+            {{ events }}
+          <p
+            class="x_via"
+            style="
+              font-weight: 400;
+              font-size: 14px;
+              line-height: 24px;
+              border-radius: 3px;
+              background-color: #f7f8f9;
+              text-align: center;
+              margin: 15px 0;
+              padding: 15px;
+            "
+          >
+            You are receiving this email because you have subscribed to Alplakes
+            event notifications for {{ name }}.
+          </p>
+        </div>
+        <div
+          class="x_container"
+          style="
+            font-weight: 400;
+            max-width: 600px;
+            text-align: left;
+            margin: 0px auto;
+            padding: 0px 20px;
+            font-family: Lato, 'Helvetica Neue', helvetica, sans-serif, serif,
+              EmojiFont;
+          "
+        >
+          <div
+            class="x_footer"
+            style="
+              font-weight: 400;
+              border-top: 1px solid #e7ebee;
+              padding: 35px 0;
+            "
+          >
+            <a
+              href=""
+              target="_blank"
+              rel="noopener noreferrer"
+              style="font-weight: 500; color: #687276; text-decoration: none"
+              >Unsubscribe</a
+            >
+          </div>
+        </div>
+      </td>
+    </tr>
+  </tbody>
+</table>

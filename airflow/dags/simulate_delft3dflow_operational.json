@@ -1,72 +1,84 @@
 [
     {
         "simulation_id": "biel",
+        "name": "Lake Biel",
         "schedule_interval": "0 9 * * *",
         "cores": 6,
         "docker": "eawag/delft3d-flow:6.02.10.142612"
     },
     {
         "simulation_id": "zurich",
+        "name": "Lake Zurich",
         "schedule_interval": "5 9 * * *",
         "cores": 5,
         "docker": "eawag/delft3d-flow:6.03.00.62434"
     },
     {
         "simulation_id": "geneva",
+        "name": "Lake Geneva",
         "schedule_interval": "10 9 * * *",
         "cores": 4,
         "docker": "eawag/delft3d-flow:6.03.00.62434"
     },
     {
         "simulation_id": "greifensee",
+        "name": "Greifensee",
         "schedule_interval": "15 9 * * *",
         "cores": 5,
         "docker": "eawag/delft3d-flow:6.02.10.142612"
     },
     {
         "simulation_id": "garda",
+        "name": "Lake Garda",
         "schedule_interval": "20 9 * * *",
         "cores": 6,
         "docker": "eawag/delft3d-flow:6.02.10.142612"
     },
     {
         "simulation_id": "lugano",
+        "name": "Lake Lugano",
         "schedule_interval": "25 9 * * *",
         "cores": 5,
         "docker": "eawag/delft3d-flow:6.02.10.142612"
     },
     {
         "simulation_id": "murten",
+        "name": "Lake Murten",
         "schedule_interval": "30 9 * * *",
         "cores": 5,
         "docker": "eawag/delft3d-flow:6.02.10.142612"
     },
     {
         "simulation_id": "caldonazzo",
+        "name": "Lake Caldonazzo",
         "schedule_interval": "35 9 * * *",
         "cores": 5,
         "docker": "eawag/delft3d-flow:6.02.10.142612"
     },
     {
         "simulation_id": "ageri",
+        "name": "Lake Aegeri",
         "schedule_interval": "40 9 * * *",
         "cores": 5,
         "docker": "eawag/delft3d-flow:6.02.10.142612"
     },
     {
         "simulation_id": "joux",
+        "name": "Lac de Joux",
         "schedule_interval": "45 9 * * *",
         "cores": 5,
         "docker": "eawag/delft3d-flow:6.02.10.142612"
     },
     {
         "simulation_id": "hallwil",
+        "name": "Lake Hallwil",
         "schedule_interval": "50 9 * * *",
         "cores": 5,
         "docker": "eawag/delft3d-flow:6.02.10.142612"
     },
     {
         "simulation_id": "stmoritz",
+        "name": "Lake St Moritz",
         "schedule_interval": "55 9 * * *",
         "cores": 1,
         "docker": "eawag/delft3d-flow:6.02.10.142612"

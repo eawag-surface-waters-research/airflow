@@ -113,18 +113,20 @@ def create_dag(dag_id, parameters):
         dag=dag,
     )
 
-    """event_notifications = PythonOperator(
+    event_notifications = PythonOperator(
         task_id='event_notifications',
         python_callable=process_event_notifications,
         op_kwargs={"lake": parameters["simulation_id"],
+                   "name": parameters["name"],
                    "model": "delft3d-flow",
+                   "email_list": ["james.runnalls@eawag.ch"],
                    "bucket": "https://alplakes-eawag.s3.eu-central-1.amazonaws.com",
-                   "api": "https://alplakes-api.eawag.ch",
+                   "folder": "{{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}",
                    'AWS_ID': Variable.get("AWS_ACCESS_KEY_ID"),
                    'AWS_KEY': Variable.get("AWS_SECRET_ACCESS_KEY")},
         on_failure_callback=report_failure,
         dag=dag,
-    )"""
+    )
 
     send_results = BashOperator(
         task_id='send_results',
@@ -163,7 +165,7 @@ def create_dag(dag_id, parameters):
         dag=dag,
     )
 
-    prepare_simulation_files >> run_simulation >> postprocess_simulation_output >> events_simulation_output >> send_results >> remove_results >> cache_data >> update_datalakes
+    prepare_simulation_files >> run_simulation >> postprocess_simulation_output >> events_simulation_output >> event_notifications >> send_results >> remove_results >> cache_data >> update_datalakes
 
     return dag
 
