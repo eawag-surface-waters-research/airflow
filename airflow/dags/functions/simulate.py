@@ -4,6 +4,7 @@ import boto3
 import requests
 import tempfile
 import numpy as np
+from urllib.parse import quote
 from datetime import datetime, timedelta, timezone
 from dateutil.relativedelta import relativedelta, SU
 from airflow.utils.email import send_email
@@ -227,7 +228,7 @@ def process_event_notifications(ds, **kwargs):
                 for file in os.listdir(os.path.join(folder, "events")):
                     if file.endswith(".png"):
                         s3.upload_file(os.path.join(folder, "events", file), bucket_key,
-                                       "simulations/{}/events/{}/events/images/{}.json".format(model, lake, file))
+                                       "simulations/{}/events/{}/images/{}".format(model, lake, file))
 
             for event in events:
                 if datetime.fromisoformat(event["end"]) > now:
@@ -241,7 +242,7 @@ def process_event_notifications(ds, **kwargs):
                                 "%H:%M %d %B %Y"),
                             "peak": datetime.fromisoformat(event["properties"]["peak"]).strftime("%H:%M %d %B %Y"),
                             "max_centroid": str(round(event["properties"]["max_centroid"], 2)) + "°C",
-                            "img": event["properties"]["peak"],
+                            "img": quote(event["properties"]["peak"], safe=''),
                             "description": event["description"]
                         }
                     elif event["type"] == "localisedCurrents":
@@ -250,7 +251,7 @@ def process_event_notifications(ds, **kwargs):
                             "period": datetime.fromisoformat(event["start"]).strftime(
                                 "%H:%M %d %B %Y") + " - " + datetime.fromisoformat(event["end"]).strftime(
                                 "%H:%M %d %B %Y"),
-                            "img": event["start"],
+                            "img": quote(event["start"], safe=''),
                             "description": event["description"]
                         }
                     else:
@@ -274,7 +275,7 @@ def process_event_notifications(ds, **kwargs):
                 for i in range(len(email_list)):
                     send_email(
                         to=str(email_list[i]),
-                        subject='Alplakes - New events predicted for {}'.format(lake),
+                        subject='Alplakes - New events predicted for {}'.format(name),
                         html_content=email_html
                     )
 
