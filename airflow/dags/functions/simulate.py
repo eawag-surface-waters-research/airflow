@@ -275,7 +275,7 @@ def process_event_notifications(ds, **kwargs):
                 for i in range(len(email_list)):
                     send_email(
                         to=str(email_list[i]),
-                        subject='Alplakes - New events predicted for {}'.format(name),
+                        subject='New events predicted for {}'.format(name),
                         html_content=email_html
                     )
 
