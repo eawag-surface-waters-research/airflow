@@ -119,7 +119,7 @@ def create_dag(dag_id, parameters):
         op_kwargs={"lake": parameters["simulation_id"],
                    "name": parameters["name"],
                    "model": "delft3d-flow",
-                   "email_list": ["james.runnalls@eawag.ch"],
+                   "email_list": ["james.runnalls@eawag.ch", "damien.bouffard@eawag.ch", "anne.leroquais@eawag.ch"],
                    "bucket": "https://alplakes-eawag.s3.eu-central-1.amazonaws.com",
                    "folder": "{{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}",
                    'AWS_ID': Variable.get("AWS_ACCESS_KEY_ID"),
