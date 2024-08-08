@@ -93,7 +93,7 @@ bash_test_simulation = BashOperator(
 
 bash_test_simulation_docker = BashOperator(
     task_id='bash_test_simulation_docker',
-    bash_command='docker run hello-world',
+    bash_command='docker run --rm hello-world',
     queue='simulation',
     on_failure_callback=report_failure,
     dag=dag,
