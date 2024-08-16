@@ -5,14 +5,13 @@ import pytz
 import boto3
 import requests
 import tempfile
-import pandas as pd
-from html.parser import HTMLParser
 
 from airflow.operators.python_operator import PythonOperator
 from airflow.utils.dates import days_ago
 from airflow.models import Variable
 
 from functions.email import report_failure
+from functions.parse import ch1903_plus_to_latlng, parse_html_table, parse_html, html_find_all
 
 from airflow import DAG
 
@@ -47,48 +46,6 @@ dag = DAG(
     tags=['insitu', 'monitoring'],
 )
 
-
-def ch1903_plus_to_latlng(x, y):
-    x_aux = (x - 2600000) / 1000000
-    y_aux = (y - 1200000) / 1000000
-    lat = 16.9023892 + 3.238272 * y_aux - 0.270978 * x_aux ** 2 - 0.002528 * y_aux ** 2 - 0.0447 * x_aux ** 2 * y_aux - 0.014 * y_aux ** 3
-    lng = 2.6779094 + 4.728982 * x_aux + 0.791484 * x_aux * y_aux + 0.1306 * x_aux * y_aux ** 2 - 0.0436 * x_aux ** 3
-    lat = (lat * 100) / 36
-    lng = (lng * 100) / 36
-    return lat, lng
-
-
-class TableHTMLParser(HTMLParser):
-    def __init__(self):
-        super().__init__()
-        self.rows = []
-        self.current_row = []
-        self.in_td = False
-
-    def handle_starttag(self, tag, attrs):
-        if tag == 'td':
-            self.in_td = True
-
-    def handle_endtag(self, tag):
-        if tag == 'tr':
-            if self.current_row:
-                self.rows.append(self.current_row)
-                self.current_row = []
-        elif tag == 'td':
-            self.in_td = False
-
-    def handle_data(self, data):
-        if self.in_td:
-            self.current_row.append(data.strip())
-
-
-def parse_html_table(html_table):
-    parser = TableHTMLParser()
-    parser.feed(html_table)
-    df = pd.DataFrame(parser.rows)
-    return df
-
-
 def collect_water_temperature(ds, **kwargs):
     bucket = kwargs["bucket"]
     aws_access_key_id = kwargs["AWS_ID"]
@@ -102,6 +59,7 @@ def collect_water_temperature(ds, **kwargs):
     features = []
     failed = []
     swiss_timezone = pytz.timezone("Europe/Zurich")
+    min_date = (datetime.now() - timedelta(days=14)).timestamp()
 
     # BAFU
     try:
@@ -110,26 +68,27 @@ def collect_water_temperature(ds, **kwargs):
         if response.status_code == 200:
             for f in response.json()["features"]:
                 lat, lng = ch1903_plus_to_latlng(f["geometry"]["coordinates"][0], f["geometry"]["coordinates"][1])
-                time = datetime.strptime(f["properties"]["last_measured_at"], "%Y-%m-%dT%H:%M:%S.%f%z").timestamp()
+                date = datetime.strptime(f["properties"]["last_measured_at"], "%Y-%m-%dT%H:%M:%S.%f%z").timestamp()
                 lake = False
                 if str(f["properties"]["key"]) in lookup:
                     lake = lookup[str(f["properties"]["key"])]
-                features.append({
-                    "type": "Feature",
-                    "id": "bafu_" + f["properties"]["key"],
-                    "properties": {
-                        "label": f["properties"]["label"],
-                        "last_time": time,
-                        "last_value": float(f["properties"]["last_value"]),
-                        "url": "https://www.hydrodaten.admin.ch/en/seen-und-fluesse/stations/{}".format(
-                            f["properties"]["key"]),
-                        "source": "BAFU Hydrodaten",
-                        "icon": "river",
-                        "lake": lake
-                    },
-                    "geometry": {
-                        "coordinates": [lng, lat],
-                        "type": "Point"}})
+                if date > min_date:
+                    features.append({
+                        "type": "Feature",
+                        "id": "bafu_" + f["properties"]["key"],
+                        "properties": {
+                            "label": f["properties"]["label"],
+                            "last_time": date,
+                            "last_value": float(f["properties"]["last_value"]),
+                            "url": "https://www.hydrodaten.admin.ch/en/seen-und-fluesse/stations/{}".format(
+                                f["properties"]["key"]),
+                            "source": "BAFU Hydrodaten",
+                            "icon": "river",
+                            "lake": lake
+                        },
+                        "geometry": {
+                            "coordinates": [lng, lat],
+                            "type": "Point"}})
     except Exception as e:
         print(e)
         failed.append("BAFU")
@@ -141,27 +100,28 @@ def collect_water_temperature(ds, **kwargs):
         if response.status_code == 200:
             for f in response.json():
                 if f["metadata_station_no"] in ids:
-                    time = datetime.strptime(f["L1_timestamp"], "%Y-%m-%dT%H:%M:%S.%f%z").timestamp()
+                    date = datetime.strptime(f["L1_timestamp"], "%Y-%m-%dT%H:%M:%S.%f%z").timestamp()
                     if f["metadata_river_name"] == "":
                         icon = "lake"
                     else:
                         icon = "river"
-                    features.append({
-                        "type": "Feature",
-                        "id": "thurgau_" + f["metadata_station_no"],
-                        "properties": {
-                            "label": f["metadata_station_name"],
-                            "last_time": time,
-                            "last_value": float(f["L1_ts_value"]),
-                            "url": "http://www.hydrodaten.tg.ch/app/index.html#{}".format(f["metadata_station_no"]),
-                            "source": "Kanton Thurgau",
-                            "icon": icon,
-                            "lake": "constance"
-                        },
-                        "geometry": {
-                            "coordinates": [float(f["metadata_station_longitude"]),
-                                            float(f["metadata_station_latitude"])],
-                            "type": "Point"}})
+                    if date > min_date:
+                        features.append({
+                            "type": "Feature",
+                            "id": "thurgau_" + f["metadata_station_no"],
+                            "properties": {
+                                "label": f["metadata_station_name"],
+                                "last_time": date,
+                                "last_value": float(f["L1_ts_value"]),
+                                "url": "http://www.hydrodaten.tg.ch/app/index.html#{}".format(f["metadata_station_no"]),
+                                "source": "Kanton Thurgau",
+                                "icon": icon,
+                                "lake": "constance"
+                            },
+                            "geometry": {
+                                "coordinates": [float(f["metadata_station_longitude"]),
+                                                float(f["metadata_station_latitude"])],
+                                "type": "Point"}})
     except Exception as e:
         print(e)
         failed.append("Thurgau")
@@ -201,23 +161,24 @@ def collect_water_temperature(ds, **kwargs):
             for index, row in df.iterrows():
                 label = row.iloc[0]
                 if label in stations:
-                    time = datetime.strptime(str(row.iloc[3] + row.iloc[2]), "%d.%m.%Y%H:%M")
-                    time = swiss_timezone.localize(time).timestamp()
-                    features.append({
-                        "type": "Feature",
-                        "id": stations[label]["id"],
-                        "properties": {
-                            "label": label,
-                            "last_time": time,
-                            "last_value": float(row.iloc[4]),
-                            "url": "https://www.zh.ch/de/umwelt-tiere/wasser-gewaesser/messdaten/wassertemperaturen.html",
-                            "source": "Kanton Zurich",
-                            "icon": stations[label]["icon"],
-                            "lake": stations[label]["lake"]
-                        },
-                        "geometry": {
-                            "coordinates": stations[label]["coordinates"],
-                            "type": "Point"}})
+                    date = datetime.strptime(str(row.iloc[3] + row.iloc[2]), "%d.%m.%Y%H:%M")
+                    date = swiss_timezone.localize(date).timestamp()
+                    if date > min_date:
+                        features.append({
+                            "type": "Feature",
+                            "id": stations[label]["id"],
+                            "properties": {
+                                "label": label,
+                                "last_time": date,
+                                "last_value": float(row.iloc[4]),
+                                "url": "https://www.zh.ch/de/umwelt-tiere/wasser-gewaesser/messdaten/wassertemperaturen.html",
+                                "source": "Kanton Zurich",
+                                "icon": stations[label]["icon"],
+                                "lake": stations[label]["lake"]
+                            },
+                            "geometry": {
+                                "coordinates": stations[label]["coordinates"],
+                                "type": "Point"}})
     except Exception as e:
         print(e)
         failed.append("Zurich")
@@ -241,23 +202,24 @@ def collect_water_temperature(ds, **kwargs):
                 response = requests.get("https://api.datalakes-eawag.ch/datasets/{}".format(station["id"]))
                 if response.status_code == 200:
                     metadata = response.json()
-                    time = datetime.strptime(data["time"], "%Y-%m-%dT%H:%M:%S.%fZ").replace(
+                    date = datetime.strptime(data["time"], "%Y-%m-%dT%H:%M:%S.%fZ").replace(
                         tzinfo=timezone.utc).timestamp()
-                    features.append({
-                        "type": "Feature",
-                        "id": "datalakes_{}".format(station["id"]),
-                        "properties": {
-                            "label": station["label"],
-                            "last_time": time,
-                            "last_value": data["value"],
-                            "url": "https://www.datalakes-eawag.ch/datadetail/{}".format(station["id"]),
-                            "source": "Datalakes",
-                            "icon": "lake",
-                            "lake": station["lake"]
-                        },
-                        "geometry": {
-                            "coordinates": [metadata["longitude"], metadata["latitude"]],
-                            "type": "Point"}})
+                    if date > min_date:
+                        features.append({
+                            "type": "Feature",
+                            "id": "datalakes_{}".format(station["id"]),
+                            "properties": {
+                                "label": station["label"],
+                                "last_time": date,
+                                "last_value": data["value"],
+                                "url": "https://www.datalakes-eawag.ch/datadetail/{}".format(station["id"]),
+                                "source": "Datalakes",
+                                "icon": "lake",
+                                "lake": station["lake"]
+                            },
+                            "geometry": {
+                                "coordinates": [metadata["longitude"], metadata["latitude"]],
+                                "type": "Point"}})
     except Exception as e:
         print(e)
         failed.append("Datalakes")
@@ -287,26 +249,76 @@ def collect_water_temperature(ds, **kwargs):
             if response.status_code == 200:
                 data = response.json()
                 result = data["result"][0]
-                time = datetime.strptime(result["timestamp"], "%Y-%m-%dT%H:%M:%S.%fZ").replace(
+                date = datetime.strptime(result["timestamp"], "%Y-%m-%dT%H:%M:%S.%fZ").replace(
                     tzinfo=timezone.utc).timestamp()
-                features.append({
-                    "type": "Feature",
-                    "id": "zurich_police_{}".format(station["id"]),
-                    "properties": {
-                        "label": station["label"],
-                        "last_time": time,
-                        "last_value": result["values"]["water_temperature"]["value"],
-                        "url": "https://www.tecson-data.ch/zurich/{}/index.php".format(station["id"]),
-                        "source": "Stadtpolizei Zürich",
-                        "icon": "lake",
-                        "lake": "zurich"
-                    },
-                    "geometry": {
-                        "coordinates": station["coordinates"],
-                        "type": "Point"}})
+                if date > min_date:
+                    features.append({
+                        "type": "Feature",
+                        "id": "zurich_police_{}".format(station["id"]),
+                        "properties": {
+                            "label": station["label"],
+                            "last_time": date,
+                            "last_value": result["values"]["water_temperature"]["value"],
+                            "url": "https://www.tecson-data.ch/zurich/{}/index.php".format(station["id"]),
+                            "source": "Stadtpolizei Zürich",
+                            "icon": "lake",
+                            "lake": False
+                        },
+                        "geometry": {
+                            "coordinates": station["coordinates"],
+                            "type": "Point"}})
     except Exception as e:
         print(e)
         failed.append("Zurich Police")
+
+    # MySwitzerland
+    try:
+        response = requests.get("https://alplakes-eawag.s3.eu-central-1.amazonaws.com/insitu/myswitzerland.json")
+        if response.status_code == 200:
+            data = response.json()
+            for station in data:
+                response = requests.get("https://sospo.myswitzerland.com/lakesides-swimming-pools/{}".format(station))
+                if response.status_code == 200:
+                    root = parse_html(response.text)
+                    element = html_find_all(root, tag="a", class_name="AreaMap--link")
+                    location = element[0].get('href').split("?q=")[-1].split(",")
+                    coords = [float(location[1]), float(location[0])]
+                    label = html_find_all(root, tag="h1", class_name="PageHeader--title")[0].text
+                    date = datetime.strptime(
+                        html_find_all(root, tag="div", class_name="QuickFactsWidget--info")[0].text.strip().split(": ",
+                                                                                                                  1)[1],
+                        "%d.%m.%Y, %H:%M")
+                    date = swiss_timezone.localize(date).timestamp()
+                    value = False
+                    icon = "lake"
+                    for info in html_find_all(root, tag="ul", class_name="QuickFacts--info"):
+                        c = html_find_all(info, tag="li", class_name="QuickFacts--content")
+                        if len(c) == 1:
+                            content = c[0].text
+                            value = html_find_all(info, tag="li", class_name="QuickFacts--value")[0].text
+                            if content in ["Lake bathing", "River pools"] and value != "—":
+                                if content == "River pools":
+                                    icon = "river"
+                                value = float(value.replace("°", ""))
+                    if value and date > min_date:
+                        features.append({
+                            "type": "Feature",
+                            "id": "myswitzerland_{}".format(station),
+                            "properties": {
+                                "label": label,
+                                "last_time": date,
+                                "last_value": value,
+                                "url": "https://sospo.myswitzerland.com/lakesides-swimming-pools/{}".format(station),
+                                "source": "MySwitzerland",
+                                "icon": icon,
+                                "lake": False
+                            },
+                            "geometry": {
+                                "coordinates": coords,
+                                "type": "Point"}})
+    except Exception as e:
+        print(e)
+        failed.append("MySwitzerland")
 
     response = requests.get("{}/insitu/summary/water_temperature.geojson".format(bucket))
     if response.status_code == 200:
