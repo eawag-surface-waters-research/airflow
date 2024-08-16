@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import os
 import json
 import pytz
@@ -261,6 +261,52 @@ def collect_water_temperature(ds, **kwargs):
     except Exception as e:
         print(e)
         failed.append("Datalakes")
+
+    # Zurich Police
+    try:
+        stations = [
+            {
+                "id": "tiefenbrunnen",
+                "label": "Tiefenbrunnen",
+                "coordinates": [8.561413, 47.348139]
+            },
+            {
+                "id": "mythenquai",
+                "label": "Mythenquai",
+                "coordinates": [8.536529, 47.357655]
+            }
+        ]
+
+        for station in stations:
+            today = datetime.today()
+            startDate = (today - timedelta(days=2)).strftime('%Y-%m-%d')
+            endDate = (today + timedelta(days=1)).strftime('%Y-%m-%d')
+            response = requests.get(
+                "https://tecdottir.herokuapp.com/measurements/{}?startDate={}&endDate={}&sort=timestamp_cet%20desc&limit=1&offset=0".format(
+                    station["id"], startDate, endDate))
+            if response.status_code == 200:
+                data = response.json()
+                result = data["result"][0]
+                time = datetime.strptime(result["timestamp"], "%Y-%m-%dT%H:%M:%S.%fZ").replace(
+                    tzinfo=timezone.utc).timestamp()
+                features.append({
+                    "type": "Feature",
+                    "id": "zurich_police_{}".format(station["id"]),
+                    "properties": {
+                        "label": station["label"],
+                        "last_time": time,
+                        "last_value": result["values"]["water_temperature"]["value"],
+                        "url": "https://www.tecson-data.ch/zurich/{}/index.php".format(station["id"]),
+                        "source": "Stadtpolizei Zürich",
+                        "icon": "lake",
+                        "lake": "zurich"
+                    },
+                    "geometry": {
+                        "coordinates": station["coordinates"],
+                        "type": "Point"}})
+    except Exception as e:
+        print(e)
+        failed.append("Zurich Police")
 
     response = requests.get("{}/insitu/summary/water_temperature.geojson".format(bucket))
     if response.status_code == 200:
