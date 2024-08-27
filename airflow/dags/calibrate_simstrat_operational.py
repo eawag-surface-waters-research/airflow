@@ -5,7 +5,7 @@ from airflow.utils.dates import days_ago
 
 from functions.simstrat import upload_simstrat_calibration_result
 
-from functions.email import report_failure
+from functions.email import report_failure, report_success
 
 from airflow import DAG
 
@@ -65,6 +65,7 @@ upload_result = PythonOperator(
                    'AWS_ID': Variable.get("AWS_ACCESS_KEY_ID"),
                    'AWS_KEY': Variable.get("AWS_SECRET_ACCESS_KEY")},
         on_failure_callback=report_failure,
+        on_success_callback=report_success,
         dag=dag,
     )
 
