@@ -236,3 +236,17 @@ def cache_simstrat_doy(ds, **kwargs):
                 else:
                     print("Failed to retrieve simulations/1d/doy/simstrat/{}/{}/{}".format(lake["name"], parameter, d))
 
+def upload_simstrat_calibration_result(ds, **kwargs):
+    bucket = kwargs["bucket"]
+    aws_access_key_id = kwargs["AWS_ID"]
+    aws_secret_access_key = kwargs["AWS_KEY"]
+    local_file = kwargs["file"]
+    bucket_key = bucket.split(".")[0].split("//")[1]
+
+    s3 = boto3.client("s3",
+                      aws_access_key_id=aws_access_key_id,
+                      aws_secret_access_key=aws_secret_access_key)
+
+    s3_name = "calibrations/simstrat/calibration_{}.json".format(kwargs['execution_date'].strftime('%Y%m%dT%H%M'))
+    s3.upload_file(local_file, bucket_key, s3_name)
+    print("Results", bucket + "/" + s3_name)
