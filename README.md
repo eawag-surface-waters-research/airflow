@@ -109,7 +109,7 @@ POSTGRES_ADDRESS=eaw-alplakes2:5432
 REDIS_ADDRESS=eaw-alplakes2:6379
 ```
 The setup above is only valid for machines inside the Eawag network, in order to launch workers on machines outside the Eawag network, 
-the ports 6370 and 5432 would need to be exposed on the main node and the variables adjusted to the new addresses.
+the ports 6379 and 5432 would need to be exposed on the main node and the variables adjusted to the new addresses.
 ***
 #### Development Environment
 ```console 
