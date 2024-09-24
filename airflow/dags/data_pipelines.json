@@ -1,0 +1,13 @@
+[
+    {
+        "id": "lake_hallwil_mooring",
+        "docker_id": "hallwil",
+        "repo_https": "https://gitlab.renkulab.io/eawag-surf/lake-hallwil-mooring.git",
+        "repo_name": "lake-hallwil-mooring",
+        "upload": false,
+        "datalakes_ids": [1046],
+        "schedule_interval": false,
+        "credential_id": "lake_hallwil_mooring",
+        "credential_keys": ["ftp", "user", "password"]
+    }
+]
