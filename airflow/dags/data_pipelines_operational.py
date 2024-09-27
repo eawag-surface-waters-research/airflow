@@ -1,6 +1,8 @@
+import os
 import json
+import time
 import requests
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, timezone
 
 from airflow.operators.bash import BashOperator
 from airflow.operators.python_operator import PythonOperator
@@ -20,16 +22,44 @@ def create_credentials(credential_id, credential_keys):
 
 
 def update_datalakes_datasets(ids):
-    for dataset_id in ids:
+    for index, dataset_id in enumerate(ids):
         url = "https://api.datalakes-eawag.ch/update/"+str(dataset_id)
+        print("Calling {}".format(url))
         try:
             requests.get(url)
         except Exception as e:
             print(f"Error calling {url}: {e}")
+        if index != 0:
+            print("Waiting 30 seconds...")
+            time.sleep(30)
 
 
-def verify_data_updates(ds, **kwargs):
-    print("Verifying update")
+def verify_data_updates(ids, time_limits, folder):
+    errors = []
+    path = os.path.join(folder, ".failing")
+    for index, dataset_id in enumerate(ids):
+        url = "https://api.datalakes-eawag.ch/datasets/" + str(dataset_id)
+        response = requests.get(url)
+        if response.status_code != 200:
+            continue
+        data = response.json()
+        last_update = datetime.strptime(data["maxdatetime"], '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=timezone.utc)
+        current_datetime = datetime.now(timezone.utc)
+        if last_update > current_datetime:
+            errors.append({"dataset": dataset_id, "message": "Datetime greater than current datetime"})
+        elif (current_datetime - last_update).total_seconds() > time_limits[index] * 3600:
+            errors.append({"dataset": dataset_id, "message": "Dataset out of date"})
+    if len(errors) > 0:
+        print(errors)
+        if os.path.exists(path):
+            print("Error email already sent")
+        else:
+            with open(path, "w") as file:
+                pass
+            raise ValueError("Errors verifying datasets")
+    elif os.path.exists(path):
+        print("Removed error status")
+        os.remove(path)
 
 
 def create_dag(dag_id, parameters):
@@ -37,7 +67,7 @@ def create_dag(dag_id, parameters):
         'owner': 'airflow',
         'depends_on_past': False,
         'start_date': days_ago(2),
-        'email': ['james.runnalls@eawag.ch'],
+        'email': parameters["email"],
         'email_on_failure': False,
         'email_on_retry': False,
         'queue': 'simulation',

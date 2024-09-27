@@ -8,6 +8,7 @@ from airflow.operators.email import EmailOperator
 
 
 def report_failure(context):
+    emails = context['dag'].default_args.get('email', [])
     ti = context.get('task_instance')
     exception = context.get('exception')
     parameters = {
@@ -29,12 +30,13 @@ def report_failure(context):
 
     html_content = template.render(parameters)
     subject = f'DAG ERROR - {ti.dag_id} failed.'
-    send_email = EmailOperator(task_id="report_failure", to="james.runnalls@eawag.ch", subject=subject,
+    send_email = EmailOperator(task_id="report_failure", to=emails, subject=subject,
                                html_content=html_content)
     send_email.execute(context)
 
 
 def report_success(context):
+    emails = context['dag'].default_args.get('email', [])
     ti = context.get('task_instance')
     dag_run = context.get('dag_run')
     parameters = {
@@ -51,6 +53,6 @@ def report_success(context):
 
     html_content = template.render(parameters)
     subject = f'TASK COMPLETE - {ti.task_id}'
-    send_email = EmailOperator(task_id="report_success", to="james.runnalls@eawag.ch", subject=subject,
+    send_email = EmailOperator(task_id="report_success", to=emails, subject=subject,
                                html_content=html_content)
     send_email.execute(context)

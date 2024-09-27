@@ -6,8 +6,10 @@
         "repo_name": "lake-hallwil-mooring",
         "upload": false,
         "datalakes_ids": [1046],
+        "datalakes_time_gap_failure_notification": [3],
         "schedule_interval": false,
         "credential_id": "lake_hallwil_mooring",
-        "credential_keys": ["ftp", "user", "password"]
+        "credential_keys": ["ftp", "user", "password"],
+        "email": ["james.runnalls@eawag.ch"]
     }
 ]
