@@ -80,14 +80,14 @@ def cache_simstrat_operational_data(ds, **kwargs):
             continue
         data = {}
         for parameter in parameters:
-            url = "{}/simulations/1d/point/simstrat/{}/{}/{}/{}/{}".format(
-                api, lake["name"], parameter["simstrat_key"], start.strftime("%Y%m%d%H%M"), end.strftime("%Y%m%d%H%M"),
-                lake["depths"][parameter["depth"]])
+            url = "{}/simulations/1d/point/simstrat/{}/{}/{}/{}?variables={}".format(
+                api, lake["name"], start.strftime("%Y%m%d%H%M"), end.strftime("%Y%m%d%H%M"),
+                lake["depth"][parameter["depth"]], parameter["simstrat_key"])
             response = requests.get(url)
             if response.status_code == 200:
                 if "time" not in data:
                     data["time"] = [iso_to_unix(t) for t in response.json()["time"]]
-                data[parameter["alplakes_key"]] = response.json()[parameter["simstrat_key"]]
+                data[parameter["alplakes_key"]] = response.json()["variables"][parameter["simstrat_key"]]["data"]
             else:
                 failed = failed + 1
                 print("Error: {}".format(url))
@@ -114,10 +114,10 @@ def cache_simstrat_operational_data(ds, **kwargs):
         end = datetime.strptime(lake["end_date"], "%Y-%m-%d %H:%M")
         start = end - timedelta(days=365)
         for parameter in ["T", "OxygenSat"]:
-            response = requests.get(
-                "{}/simulations/1d/depthtime/simstrat/{}/{}/{}/{}".format(api, lake["name"], parameter,
+            url = "{}/simulations/1d/depthtime/simstrat/{}/{}/{}?variables={}".format(api, lake["name"],
                                                                           start.strftime("%Y%m%d%H%M"),
-                                                                          end.strftime("%Y%m%d%H%M")))
+                                                                          end.strftime("%Y%m%d%H%M"), parameter)
+            response = requests.get(url)
             if response.status_code == 200:
                 data = response.json()
                 with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
@@ -127,10 +127,7 @@ def cache_simstrat_operational_data(ds, **kwargs):
                                "simulations/simstrat/cache/{}/heatmap_{}.json".format(lake["name"], parameter))
                 os.remove(temp_filename)
             else:
-                print("Failed to retrieve simulations",
-                      "{}/simulations/1d/depthtime/simstrat/{}/{}/{}/{}".format(api, lake["name"], parameter,
-                                                                                start.strftime("%Y%m%d%H%M"),
-                                                                                end.strftime("%Y%m%d%H%M")))
+                print("Failed to retrieve simulations", url)
 
         # Linegraphs
         end = datetime.strptime(lake["end_date"], "%Y-%m-%d %H:%M")
@@ -138,10 +135,10 @@ def cache_simstrat_operational_data(ds, **kwargs):
         start_year = datetime(datetime.now().year, 1, 1)
         depth = int(min(lake["depths"]))
         for parameter in ["T"]:
-            response = requests.get(
-                "{}/simulations/1d/point/simstrat/{}/{}/{}/{}/{}".format(api, lake["name"], parameter,
+            url = "{}/simulations/1d/point/simstrat/{}/{}/{}/{}?variables={}".format(api, lake["name"],
                                                                          start.strftime("%Y%m%d%H%M"),
-                                                                         end.strftime("%Y%m%d%H%M"), depth))
+                                                                         end.strftime("%Y%m%d%H%M"), depth, parameter)
+            response = requests.get(url)
             if response.status_code == 200:
                 data = response.json()
                 with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
@@ -151,16 +148,13 @@ def cache_simstrat_operational_data(ds, **kwargs):
                                "simulations/simstrat/cache/{}/linegraph_{}.json".format(lake["name"], parameter))
                 os.remove(temp_filename)
             else:
-                print("Failed to retrieve simulations",
-                      "{}/simulations/1d/point/simstrat/{}/{}/{}/{}/{}".format(api, lake["name"], parameter,
-                                                                               start.strftime("%Y%m%d%H%M"),
-                                                                               end.strftime("%Y%m%d%H%M"), depth))
+                print("Failed to retrieve simulations", url)
 
         # DOY current year
-        response = requests.get(
-            "{}/simulations/1d/point/simstrat/{}/{}/{}/{}/{}?resample=daily".format(api, lake["name"], parameter,
+        url = "{}/simulations/1d/point/simstrat/{}/{}/{}/{}?resample=daily&variables={}".format(api, lake["name"],
                                                                                     start_year.strftime("%Y%m%d%H%M"),
-                                                                                    end.strftime("%Y%m%d%H%M"), depth))
+                                                                                    end.strftime("%Y%m%d%H%M"), depth, parameter)
+        response = requests.get(url)
         if response.status_code == 200:
             data = response.json()
             with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
@@ -170,10 +164,7 @@ def cache_simstrat_operational_data(ds, **kwargs):
                            "simulations/simstrat/cache/{}/doy_currentyear.json".format(lake["name"]))
             os.remove(temp_filename)
         else:
-            print("Failed to retrieve simulations",
-                  "{}/simulations/1d/point/simstrat/{}/{}/{}/{}/{}".format(api, lake["name"], "T",
-                                                                           start_year.strftime("%Y%m%d%H%M"),
-                                                                           end.strftime("%Y%m%d%H%M"), depth))
+            print("Failed to retrieve simulations", url)
 
 
 def create_simstrat_doy(ds, **kwargs):
