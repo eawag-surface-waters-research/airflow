@@ -115,9 +115,9 @@ def cache_simulation_data(ds, **kwargs):
         print("Failed to collect custom period, using default of {}".format(default_period))
 
     # Cache lake page files
-    max_date = datetime.strptime(lake_metadata["end_date"], '%Y-%m-%d %H:%M').replace(tzinfo=timezone.utc)
+    max_date = datetime.strptime(lake_metadata["end_date"] + " 21:00", '%Y-%m-%d %H:%M').replace(tzinfo=timezone.utc)
     start_date = max_date + timedelta(days=default_period)
-    depth = closest(lake_metadata["depths"], default_depth)
+    depth = closest(lake_metadata["depth"], default_depth)
     start = start_date.strftime("%Y%m%d%H") + "00"
     end = max_date.strftime("%Y%m%d%H") + "00"
 
@@ -145,7 +145,7 @@ def cache_simulation_data(ds, **kwargs):
     # Cache home page forecast
     start = datetime.now().replace(tzinfo=timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(
         days=1)
-    end = datetime.strptime(lake_metadata["end_date"] + ":00+00:00", '%Y-%m-%d %H:%M:%S%z')
+    end = datetime.strptime(lake_metadata["end_date"] + " 21:00:00+00:00", '%Y-%m-%d %H:%M:%S%z')
     response = requests.get(
         "{}/simulations/layer/average_temperature/{}/{}/{}/{}/{}"
         .format(api, model, lake,start.strftime("%Y%m%d%H%M"), end.strftime("%Y%m%d%H%M"), default_depth))
@@ -164,7 +164,7 @@ def cache_simulation_data(ds, **kwargs):
     else:
         raise ValueError("Problems connecting to forecast in {}".format(bucket))
     if lake not in forecast or data["date"][-1] * 1000 > forecast[lake]["time"][-1] + (6 * 3600 * 1000):
-        out = {"time": [int(d * 1000) for d in data["date"]], "temperature": data["temperature"]}
+        out = {"time": [int(d * 1000) for d in data["date"]], "temperature": data["variable"]["data"]}
         if lake in forecast and "ice" in forecast[lake]:
             out["ice"] = interpolate(forecast[lake]["time"], out["time"], forecast[lake]["ice"])
         if lake in forecast and "oxygen" in forecast[lake]:
