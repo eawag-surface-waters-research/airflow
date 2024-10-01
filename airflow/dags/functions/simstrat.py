@@ -22,7 +22,7 @@ def validate_simstrat_operational_data(ds, **kwargs):
     midnight_today = datetime(year=now.year, month=now.month, day=now.day, tzinfo=timezone.utc)
     forecast_date = midnight_today + timedelta(days=4)
     for lake in lakes:
-        if datetime.strptime(lake["end_date"], "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc) < forecast_date:
+        if datetime.strptime(lake["end_date"] + " 22:00", "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc) < forecast_date:
             failed.append(lake["name"])
     if len(failed) > 0:
         raise ValueError("Simstrat simulation failed for: {}".format(", ".join(failed)))
@@ -111,7 +111,7 @@ def cache_simstrat_operational_data(ds, **kwargs):
         os.remove(temp_filename)
 
         # Heatmaps
-        end = datetime.strptime(lake["end_date"], "%Y-%m-%d %H:%M")
+        end = datetime.strptime(lake["end_date"] + " 22:00", "%Y-%m-%d %H:%M")
         start = end - timedelta(days=365)
         for parameter in ["T", "OxygenSat"]:
             url = "{}/simulations/1d/depthtime/simstrat/{}/{}/{}?variables={}".format(api, lake["name"],
@@ -130,7 +130,7 @@ def cache_simstrat_operational_data(ds, **kwargs):
                 print("Failed to retrieve simulations", url)
 
         # Linegraphs
-        end = datetime.strptime(lake["end_date"], "%Y-%m-%d %H:%M")
+        end = datetime.strptime(lake["end_date"] + " 22:00", "%Y-%m-%d %H:%M")
         start = end - timedelta(days=5)
         start_year = datetime(datetime.now().year, 1, 1)
         depth = int(min(lake["depths"]))

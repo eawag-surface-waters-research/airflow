@@ -163,8 +163,8 @@ def cache_simulation_data(ds, **kwargs):
         forecast = {}
     else:
         raise ValueError("Problems connecting to forecast in {}".format(bucket))
-    if lake not in forecast or data["date"][-1] * 1000 > forecast[lake]["time"][-1] + (6 * 3600 * 1000):
-        out = {"time": [int(d * 1000) for d in data["date"]], "temperature": data["variable"]["data"]}
+    if lake not in forecast or int(datetime.fromisoformat(data["time"][-1]).timestamp() * 1000) > forecast[lake]["time"][-1] + (6 * 3600 * 1000):
+        out = {"time": [int(datetime.fromisoformat(d).timestamp() * 1000) for d in data["time"]], "temperature": data["variable"]["data"]}
         if lake in forecast and "ice" in forecast[lake]:
             out["ice"] = interpolate(forecast[lake]["time"], out["time"], forecast[lake]["ice"])
         if lake in forecast and "oxygen" in forecast[lake]:
