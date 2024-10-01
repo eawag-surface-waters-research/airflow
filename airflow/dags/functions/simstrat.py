@@ -133,7 +133,7 @@ def cache_simstrat_operational_data(ds, **kwargs):
         end = datetime.strptime(lake["end_date"] + " 22:00", "%Y-%m-%d %H:%M")
         start = end - timedelta(days=5)
         start_year = datetime(datetime.now().year, 1, 1)
-        depth = int(min(lake["depths"]))
+        depth = int(min(lake["depth"]))
         for parameter in ["T"]:
             url = "{}/simulations/1d/point/simstrat/{}/{}/{}/{}?variables={}".format(api, lake["name"],
                                                                          start.strftime("%Y%m%d%H%M"),
