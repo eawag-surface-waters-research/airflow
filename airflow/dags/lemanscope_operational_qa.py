@@ -37,7 +37,8 @@ dag = DAG(
     schedule_interval="45 23 * * *",
     catchup=False,
     tags=['data pipeline', 'operational'],
-    user_defined_macros={'simulation_repo_https': "https://github.com/eawag-surface-waters-research/lemanscope-qa.git",
+    user_defined_macros={'filesystem': '/opt/airflow/filesystem',
+                         'simulation_repo_https': "https://github.com/eawag-surface-waters-research/lemanscope-qa.git",
                          'simulation_repo_name': "lemanscope-qa"}
 )
 
