@@ -259,14 +259,14 @@ def upload_simstrat_download_data(ds, **kwargs):
     s3 = boto3.client("s3",
                       aws_access_key_id=aws_access_key_id,
                       aws_secret_access_key=aws_secret_access_key)
-
-    for lake in os.listdir(os.path.join(repo, "runs")):
+    lakes = [l for l in os.listdir(os.path.join(repo, "runs")) if os.path.isdir(os.path.join(repo, "runs", l))]
+    for lake in lakes:
         inputs = []
         results = []
         for root, _, files in os.walk(os.path.join(repo, "runs", lake)):
             for file in files:
                 file_path = os.path.join(root, file)
-                if os.path.dirname(file_path) == "Results":
+                if "/Results/" in file_path:
                     if file_path.endswith(".dat"):
                         results.append(file_path)
                 elif os.path.basename(file_path).startswith("simulation-snapshot") or file_path.endswith(".log"):
@@ -278,6 +278,7 @@ def upload_simstrat_download_data(ds, **kwargs):
         print("Uploading {} input files".format(lake))
         s3_name = "simulations/simstrat/downloads/{}/{}.zip".format(lake, lake)
         s3.upload_file(zip_file, bucket_key, s3_name)
+        os.remove(zip_file)
 
         for local_file in results:
             print("   Uploading {} result file {}".format(lake, os.path.basename(local_file)))
