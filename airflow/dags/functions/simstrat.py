@@ -2,14 +2,20 @@ import os
 import json
 import time
 import boto3
+import zipfile
 import requests
 import tempfile
 from datetime import datetime, timedelta, timezone
-from general import zip_files
 
 
 def iso_to_unix(input_time):
     return int(datetime.fromisoformat(input_time).astimezone(timezone.utc).timestamp()) * 1000
+
+
+def zip_files(base_folder, file_paths, output_filename):
+    with zipfile.ZipFile(output_filename, 'w') as f:
+        for file_path in file_paths:
+            f.write(file_path, os.path.relpath(file_path, base_folder))
 
 
 def validate_simstrat_operational_data(ds, **kwargs):
