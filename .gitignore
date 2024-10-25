@@ -11,3 +11,4 @@ data
 keys/*
 !keys/.gitkeep
 airflow/dags/functions/__pycache__
+notebooks/.ipynb_checkpoints
