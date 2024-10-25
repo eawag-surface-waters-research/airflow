@@ -37,7 +37,7 @@ dag = DAG(
     "simulate_simstrat_download",
     default_args=default_args,
     description='Simstrat simulations for download.',
-    schedule_interval="0 15 * * Sun",
+    schedule_interval="30 17 1 * *",
     catchup=False,
     tags=['simulation', 'download'],
     user_defined_macros={'filesystem': '/opt/airflow/filesystem',
