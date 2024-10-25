@@ -5,6 +5,7 @@ import boto3
 import requests
 import tempfile
 from datetime import datetime, timedelta, timezone
+from general import zip_files
 
 
 def iso_to_unix(input_time):
@@ -241,3 +242,39 @@ def upload_simstrat_calibration_result(ds, **kwargs):
     s3_name = "calibrations/simstrat/calibration_{}.json".format(kwargs['execution_date'].strftime('%Y%m%dT%H%M'))
     s3.upload_file(local_file, bucket_key, s3_name)
     print("Results", bucket + "/" + s3_name)
+
+def upload_simstrat_download_data(ds, **kwargs):
+    bucket = kwargs["bucket"]
+    aws_access_key_id = kwargs["AWS_ID"]
+    aws_secret_access_key = kwargs["AWS_KEY"]
+    repo = kwargs["repo"]
+    bucket_key = bucket.split(".")[0].split("//")[1]
+
+    s3 = boto3.client("s3",
+                      aws_access_key_id=aws_access_key_id,
+                      aws_secret_access_key=aws_secret_access_key)
+
+    for lake in os.listdir(os.path.join(repo, "runs")):
+        inputs = []
+        results = []
+        for root, _, files in os.walk(os.path.join(repo, "runs", lake)):
+            for file in files:
+                file_path = os.path.join(root, file)
+                if os.path.dirname(file_path) == "Results":
+                    if file_path.endswith(".dat"):
+                        results.append(file_path)
+                elif os.path.basename(file_path).startswith("simulation-snapshot") or file_path.endswith(".log"):
+                    continue
+                else:
+                    inputs.append(file_path)
+        zip_file = os.path.join(repo, "runs", lake, "{}.zip".format(lake))
+        zip_files(os.path.join(repo, "runs", lake), inputs, zip_file)
+        print("Uploading {} input files".format(lake))
+        s3_name = "simulations/simstrat/downloads/{}/{}.zip".format(lake, lake)
+        s3.upload_file(zip_file, bucket_key, s3_name)
+
+        for local_file in results:
+            print("   Uploading {} result file {}".format(lake, os.path.basename(local_file)))
+            s3_name = "simulations/simstrat/downloads/{}/{}".format(lake, os.path.basename(local_file))
+            s3.upload_file(local_file, bucket_key, s3_name)
+

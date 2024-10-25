@@ -5,7 +5,7 @@ from airflow.operators.python_operator import PythonOperator
 from airflow.models import Variable
 from airflow.utils.dates import days_ago
 
-from functions.simstrat import cache_simstrat_operational_data, validate_simstrat_operational_data
+from functions.simstrat import upload_simstrat_download_data
 
 from functions.email import report_failure
 
@@ -34,19 +34,16 @@ default_args = {
     # 'trigger_rule': 'all_success'
 }
 dag = DAG(
-    "simulate_simstrat_operational",
+    "simulate_simstrat_download",
     default_args=default_args,
-    description='Operational Simstrat simulation.',
-    schedule_interval="45 8 * * *",
+    description='Simstrat simulations for download.',
+    schedule_interval="0 15 * * Sun",
     catchup=False,
-    tags=['simulation', 'operational'],
+    tags=['simulation', 'download'],
     user_defined_macros={'filesystem': '/opt/airflow/filesystem',
                          'FILESYSTEM': Variable.get("FILESYSTEM"),
                          'simulation_repo_https': "https://github.com/Eawag-AppliedSystemAnalysis/operational-simstrat.git",
                          'simulation_repo_name': "operational-simstrat",
-                         'API_HOST': "eaw-alplakes2",
-                         'API_USER': "alplakes",
-                         'API_PASSWORD': Variable.get("API_PASSWORD"),
                          },
     params={
         'overwrite_simulation': 'false',
@@ -55,31 +52,23 @@ dag = DAG(
 
 run_simulation = BashOperator(
     task_id='run_simulation',
-    bash_command="mkdir -p {{ filesystem }}/git;"
-                 "cd {{ filesystem }}/git;"
+    bash_command="mkdir -p {{ filesystem }}/git/download;"
+                 "cd {{ filesystem }}/git/download;"
                  "git clone {{ simulation_repo_https }} && cd {{ simulation_repo_name }} || cd {{ simulation_repo_name }} && git stash && git pull;"
-                 "python src/main.py operational server_host={{ API_HOST }} sever_user={{ API_USER }} server_password={{ API_PASSWORD }} overwrite_simulation={{ params.overwrite_simulation }} docker_dir={{ FILESYSTEM }}/git/{{ simulation_repo_name }}",
+                 "python src/main.py download docker_dir={{ FILESYSTEM }}/git/download/{{ simulation_repo_name }}",
     on_failure_callback=report_failure,
     dag=dag,
 )
 
-cache_data = PythonOperator(
-        task_id='cache_data',
-        python_callable=cache_simstrat_operational_data,
+upload_data = PythonOperator(
+        task_id='upload_data',
+        python_callable=upload_simstrat_download_data,
         op_kwargs={"bucket": "https://alplakes-eawag.s3.eu-central-1.amazonaws.com",
-                   "api": "https://alplakes-api.eawag.ch",
+                   "repo": "{{ filesystem }}/git/download/{{ simulation_repo_name }}",
                    'AWS_ID': Variable.get("AWS_ACCESS_KEY_ID"),
                    'AWS_KEY': Variable.get("AWS_SECRET_ACCESS_KEY")},
         on_failure_callback=report_failure,
         dag=dag,
     )
 
-validate_results = PythonOperator(
-        task_id='validate_results',
-        python_callable=validate_simstrat_operational_data,
-        op_kwargs={"api": "https://alplakes-api.eawag.ch"},
-        on_failure_callback=report_failure,
-        dag=dag,
-    )
-
-run_simulation >> cache_data >> validate_results
+run_simulation >> upload_data
