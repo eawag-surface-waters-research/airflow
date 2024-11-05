@@ -42,6 +42,8 @@ services:
       AIRFLOW_VAR_METEO_FTP_PASSWORD: "${METEO_FTP_PASSWORD}"
       AIRFLOW_VAR_FILESYSTEM: "${FILESYSTEM}"
       AIRFLOW_VAR_API_PASSWORD: "${API_PASSWORD}"
+      AIRFLOW_VAR_MISTRAL_USER: "${MISTRAL_USER}"
+      AIRFLOW_VAR_MISTRAL_PASSWORD: "${MISTRAL_PASSWORD}"
       # Required to handle warm shutdown of the celery workers properly
       # See https://airflow.apache.org/docs/docker-stack/entrypoint.html#signal-propagation
       DUMB_INIT_SETSID: "0"
