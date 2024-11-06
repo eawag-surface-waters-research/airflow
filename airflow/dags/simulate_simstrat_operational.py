@@ -78,6 +78,7 @@ validate_results = PythonOperator(
         task_id='validate_results',
         python_callable=validate_simstrat_operational_data,
         op_kwargs={"api": "https://alplakes-api.eawag.ch"},
+        retries=0,
         on_failure_callback=report_failure,
         dag=dag,
     )
