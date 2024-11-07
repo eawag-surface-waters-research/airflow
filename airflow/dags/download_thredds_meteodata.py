@@ -34,7 +34,7 @@ dag = DAG(
     'download_thredds_meteodata',
     default_args=default_args,
     description='Download Meteodata from Thredds.',
-    schedule_interval="10 8 * * *",
+    schedule_interval="15 7 * * *",
     catchup=False,
     tags=['api', 'operational'],
 )

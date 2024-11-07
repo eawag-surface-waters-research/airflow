@@ -34,7 +34,7 @@ dag = DAG(
     'download_geosphere_meteodata',
     default_args=default_args,
     description='Download Meteodata from Geosphere.',
-    schedule_interval="10 9 * * *",
+    schedule_interval="10 7 * * *",
     catchup=False,
     tags=['api', 'operational'],
 )
