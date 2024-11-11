@@ -276,12 +276,12 @@ def upload_simstrat_download_data(ds, **kwargs):
         zip_file = os.path.join(repo, "runs", lake, "{}.zip".format(lake))
         zip_files(os.path.join(repo, "runs", lake), inputs, zip_file)
         print("Uploading {} input files".format(lake))
-        s3_name = "simulations/simstrat/downloads/{}/{}.zip".format(lake, lake)
+        s3_name = "simulations/simstrat/downloads/{}.zip".format(lake)
         s3.upload_file(zip_file, bucket_key, s3_name)
         os.remove(zip_file)
 
         for local_file in results:
             print("   Uploading {} result file {}".format(lake, os.path.basename(local_file)))
-            s3_name = "simulations/simstrat/downloads/{}/{}".format(lake, os.path.basename(local_file))
+            s3_name = "simulations/simstrat/results/{}/{}".format(lake, os.path.basename(local_file))
             s3.upload_file(local_file, bucket_key, s3_name)
 
