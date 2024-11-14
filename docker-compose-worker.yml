@@ -44,6 +44,7 @@ services:
       AIRFLOW_VAR_API_PASSWORD: "${API_PASSWORD}"
       AIRFLOW_VAR_MISTRAL_USER: "${MISTRAL_USER}"
       AIRFLOW_VAR_MISTRAL_PASSWORD: "${MISTRAL_PASSWORD}"
+      AIRFLOW_VAR_VISUALCROSSING_KEY: "${VISUALCROSSING_KEY}"
       # Required to handle warm shutdown of the celery workers properly
       # See https://airflow.apache.org/docs/docker-stack/entrypoint.html#signal-propagation
       DUMB_INIT_SETSID: "0"
