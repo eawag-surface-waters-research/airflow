@@ -17,6 +17,14 @@ def get_last_sunday(dt):
     return bd.strftime('%Y%m%d')
 
 
+def four_days_ago(dt):
+    fda = datetime.strptime(dt, "%Y-%m-%d") + timedelta(days=1) - timedelta(days=4)
+    return fda.strftime('%Y%m%d')
+
+def fourteen_days_ago(dt):
+    fda = datetime.strptime(dt, "%Y-%m-%d") + timedelta(days=1) - timedelta(days=14)
+    return fda.strftime('%Y%m%d')
+
 def get_end_date(dt):
     today = datetime.strptime(dt, "%Y-%m-%d") + timedelta(days=1)
     bd = today + timedelta(days=5)
