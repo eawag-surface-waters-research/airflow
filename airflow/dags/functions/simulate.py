@@ -16,14 +16,12 @@ def get_last_sunday(dt):
     bd = today + relativedelta(weekday=SU(-1))
     return bd.strftime('%Y%m%d')
 
-
-def four_days_ago(dt):
-    fda = datetime.strptime(dt, "%Y-%m-%d") + timedelta(days=1) - timedelta(days=4)
-    return fda.strftime('%Y%m%d')
-
-def fourteen_days_ago(dt):
-    fda = datetime.strptime(dt, "%Y-%m-%d") + timedelta(days=1) - timedelta(days=14)
-    return fda.strftime('%Y%m%d')
+def generate_days_ago_function(num_days):
+    def days_ago(dt):
+        date_obj = datetime.strptime(dt, "%Y-%m-%d")
+        adjusted_date = date_obj - timedelta(days=num_days - 1)
+        return adjusted_date.strftime('%Y%m%d')
+    return days_ago
 
 def get_end_date(dt):
     today = datetime.strptime(dt, "%Y-%m-%d") + timedelta(days=1)

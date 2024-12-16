@@ -40,27 +40,31 @@ def write_logical_date_to_parameter_file(file, date=False, offset=0, **context):
         params.write(f)
 
 
-def write_logical_date_and_tile_to_parameter_file(file, tile, date=False, offset=0, **context):
-    if date:
-        input_date = datetime.strptime(date, "%Y%m%d")
-    else:
-        input_date = datetime.strptime(context["ds"], "%Y-%m-%d")
-
-    input_date = input_date + timedelta(days=offset)
-
+def write_logical_date_and_tile_to_parameter_file(folder, prefix, tile, run_date, **context):
+    input_date = run_date(context["ds"])
+    file = os.path.join(folder, prefix+".ini")
     if not os.path.isfile(file):
         raise RuntimeError("The parameter file could not be found: {}".format(file))
+
+    out_file = file.replace(".ini", "_{}_{}.ini".format(input_date, tile))
+    out_file_download = file.replace(".ini", "_{}_{}_download.ini".format(input_date, tile))
+
+    logging.info('Writing logical date and tile to Sencast parameter file {}'.format(out_file))
     params = configparser.ConfigParser()
     params.read(file)
-    start = "{}T00:00:00.000Z".format(input_date.strftime("%Y-%m-%d"))
-    end = "{}T23:59:59.999Z".format(input_date.strftime("%Y-%m-%d"))
+    start = "{}T00:00:00.000Z".format(input_date)
+    end = "{}T23:59:59.999Z".format(input_date)
     params['General']['start'] = start
     params['General']['end'] = end
     params['General']['tiles'] = tile
-
-    out_file = file.replace(".ini", "_{}_{}.ini".format(input_date.strftime("%Y%m%d"), tile))
-    logging.info('Writing logical date and tile to Sencast parameter file {}'.format(out_file))
     with open(out_file, "w") as f:
+        params.write(f)
+
+    logging.info('Writing logical date and tile to Sencast parameter file {}'.format(out_file_download))
+    params['General']['processors'] = ""
+    params['General']['adapters'] = ""
+    params['General']['remove_inputs'] = "False"
+    with open(out_file_download, "w") as f:
         params.write(f)
 
 
