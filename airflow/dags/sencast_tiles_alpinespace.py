@@ -146,9 +146,8 @@ for days_ago in [4, 14]:
                                    run_pool="collection")
 
 # Sentinel 2 Products
-#sentinel2_tiles = ["T31TGL","T31TGM","T31TGN","T32TLR","T32TLS","T32TLT","T32TMR","T32TMS","T32TMT","T32TNR","T32TNS","T32TNT","T32TPS","T32TPR"]
-sentinel2_tiles = ["T31TGL"]
-for days_ago in [1]:
+sentinel2_tiles = ["T31TGL","T31TGM","T31TGN","T32TLR","T32TLS","T32TLT","T32TMR","T32TMS","T32TMT","T32TNR","T32TNS","T32TNT","T32TPS","T32TPR"]
+for days_ago in [2]:
     dag_id = f"sencast_alpinespace_sentinel2_{days_ago}"
     globals()[dag_id] = create_dag(dag_id,
                                    "alplakes_s2",
