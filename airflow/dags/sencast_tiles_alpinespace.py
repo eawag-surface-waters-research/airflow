@@ -37,7 +37,7 @@ def create_dag(dag_id, prefix, run_date, tiles, schedule_interval, download_pool
     dag = DAG(
         dag_id,
         default_args=default_args,
-        description='Process Collection data for the Alpine Space.',
+        description=f'Process {prefix} data.',
         schedule_interval=schedule_interval,
         catchup=False,
         tags=['sencast', 'operational'],

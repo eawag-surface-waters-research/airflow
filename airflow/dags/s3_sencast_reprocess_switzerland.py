@@ -6,7 +6,7 @@ from airflow.models import Variable
 from airflow.utils.dates import days_ago
 
 from functions.email import report_failure
-from functions.sencast import write_logical_date_to_parameter_file, get_two_weeks_ago
+from functions.sencast import write_logical_date_to_parameter_file_ss, get_two_weeks_ago
 
 from airflow import DAG
 
@@ -66,7 +66,7 @@ clone_repo = BashOperator(
 
 set_parameter_dates_14days = PythonOperator(
     task_id='set_parameter_dates_14days',
-    python_callable=write_logical_date_to_parameter_file,
+    python_callable=write_logical_date_to_parameter_file_ss,
     on_failure_callback=report_failure,
     op_kwargs={"file": '/opt/airflow/filesystem/git/sencast/parameters/datalakes_sui_S3.ini', "offset": -14},
     dag=dag,
