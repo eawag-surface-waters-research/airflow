@@ -52,8 +52,10 @@ def write_logical_date_and_tile_to_parameter_file(folder, prefix, tile, run_date
     logging.info('Writing logical date and tile to Sencast parameter file {}'.format(out_file))
     params = configparser.ConfigParser()
     params.read(file)
-    start = "{}T00:00:00.000Z".format(input_date)
-    end = "{}T23:59:59.999Z".format(input_date)
+
+    formatted_date = datetime.strptime(input_date, "%Y%m%d").strftime("%Y-%m-%d")
+    start = "{}T00:00:00.000Z".format(formatted_date)
+    end = "{}T23:59:59.999Z".format(formatted_date)
     params['General']['start'] = start
     params['General']['end'] = end
     params['General']['tiles'] = tile
