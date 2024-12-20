@@ -81,7 +81,7 @@ Certain DAGS require additional docker images in order to run. They need to be p
 DAGS can complete successfully.
 
 1. `docker pull eawag/delft3d-flow:6.02.10.142612`
-2. `docker pull eawag/sencast:0.0.1`
+2. `docker pull eawag/sencast:0.0.2`
 
 #### Sencast
 
