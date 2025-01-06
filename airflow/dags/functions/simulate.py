@@ -17,10 +17,10 @@ def get_last_sunday(dt):
     return bd.strftime('%Y%m%d')
 
 def generate_days_ago_function(num_days):
-    def days_ago(dt):
+    def days_ago(dt, pattern="%Y%m%d"):
         date_obj = datetime.strptime(dt, "%Y-%m-%d")
         adjusted_date = date_obj - timedelta(days=num_days - 1)
-        return adjusted_date.strftime('%Y%m%d')
+        return adjusted_date.strftime(pattern)
     return days_ago
 
 def get_end_date(dt):
