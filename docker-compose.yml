@@ -113,6 +113,7 @@ services:
   airflow-worker-api:
     <<: *airflow-common
     command: celery worker -q api,general
+    user: root
     healthcheck:
       test:
         - "CMD-SHELL"
