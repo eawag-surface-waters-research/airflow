@@ -49,11 +49,7 @@ def create_dag(dag_id, prefix, run_date, tiles, schedule_interval, download_pool
                              'environment_file': 'docker.ini',
                              'wkt': "alpinespace",
                              'prefix': prefix,
-                             'api_user': "alplakes",
-                             'api_server': 'eaw-alplakes2',
                              'run_date': run_date,
-                             'API_PASSWORD': Variable.get("API_PASSWORD"),
-                             'api_server_folder': "/nfsmount/filesystem/DIAS/output_data",
                              'FILESYSTEM': Variable.get("FILESYSTEM")}
     )
 
@@ -104,15 +100,6 @@ def create_dag(dag_id, prefix, run_date, tiles, schedule_interval, download_pool
                     dag=dag,
                 )
 
-                send_results = BashOperator(
-                    task_id='send_results',
-                    bash_command='f="{{ DIAS }}/output_data/{{ prefix }}_{{ run_date(ds) }}_' + tile + '_{{ wkt }}_{{ run_date(ds,"%Y-%m-%d") }}_{{ run_date(ds,"%Y-%m-%d") }}"; [ -d "$f" ] && '
-                                 'sshpass -p {{ API_PASSWORD }} scp -r "$f" {{ api_user }}@{{ api_server }}:{{ api_server_folder }} || '
-                                 'echo "Folder does not exist."',
-                    on_failure_callback=report_failure,
-                    dag=dag,
-                )
-
                 remove_results = BashOperator(
                     task_id='remove_results',
                     bash_command='f="{{ DIAS }}/output_data/{{ prefix }}_{{ run_date(ds) }}_' + tile + '_{{ wkt }}_{{ run_date(ds,"%Y-%m-%d") }}_{{ run_date(ds,"%Y-%m-%d") }}"; [ -d "$f" ] && '
@@ -128,7 +115,7 @@ def create_dag(dag_id, prefix, run_date, tiles, schedule_interval, download_pool
                     dag=dag,
                 )
 
-                clone_repo >> write_parameter_files >> download_products >> run_sencast >> send_results >> remove_results >> remove_parameter_file
+                clone_repo >> write_parameter_files >> download_products >> run_sencast >> remove_results >> remove_parameter_file
 
     return dag
 
