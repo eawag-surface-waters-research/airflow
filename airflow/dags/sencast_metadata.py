@@ -15,7 +15,7 @@ default_args = {
     'email': ['james.runnalls@eawag.ch'],
     'email_on_failure': False,
     'email_on_retry': False,
-    'queue': 'simulation',
+    'queue': 'api',
     'retries': 1,
     'retry_delay': timedelta(minutes=60),
     # 'pool': 'backfill',
@@ -97,6 +97,8 @@ with dag:
                          '-rtc {{ params.remote_tiff_cropped }} '
                          '-g {{ lake_geometry }} '
                          '-rm {{ params.remote_metadata }} '
+                         '-ms {{ params.metadata_summary }} '
+                         '-mn {{ params.metadata_name }} '
                          '-u ',
             params={
                 'AWS_ID': Variable.get("AWS_ACCESS_KEY_ID"),
@@ -107,6 +109,8 @@ with dag:
                 'remote_tiff': mp["remote_tiff"],
                 'remote_tiff_cropped': "s3://eawagrs/alplakes/cropped/" + mp["product"],
                 'remote_metadata': "s3://eawagrs/alplakes/metadata/" + mp["product"],
+                'metadata_summary': "s3://eawagrs/alplakes/metadata/summary.json",
+                'metadata_name': mp["product"],
             },
             on_failure_callback=report_failure,
             retries=1,
