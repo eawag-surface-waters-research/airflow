@@ -120,8 +120,10 @@ def create_dag(dag_id, prefix, run_date, tiles, schedule_interval, download_pool
     return dag
 
 
-# Collection 2 Products
-collection_tiles = ["193027", "193028", "194027", "194028", "195027", "195028", "196027", "196028"]
+collection_tiles = ["189027","189028","196026","196027","196028","196029","196030","194025","194026","194027","194028",
+                    "194029","192026","192027","192028","192029","190026","190027","190028","197026","197027","197028",
+                    "197029","197030","195025","195026","195027","195028","195029","195030","193025","193026","193027",
+                    "193028","193029","191027","191028"]
 for days_ago in [4, 14]:
     dag_id = f"sencast_alpinespace_collection_{days_ago}"
     globals()[dag_id] = create_dag(dag_id,
@@ -132,8 +134,12 @@ for days_ago in [4, 14]:
                                    download_pool="EROS",
                                    run_pool="collection")
 
-# Sentinel 2 Products
-sentinel2_tiles = ["T31TGL","T31TGM","T31TGN","T32TLR","T32TLS","T32TLT","T32TMR","T32TMS","T32TMT","T32TNR","T32TNS","T32TNT","T32TPS","T32TPR"]
+
+sentinel2_tiles = ["31TFJ","31TFK","31TFL","31TFM","31TGJ","31TGK","31TGL","31TGM","31TGN","32TLP","32TLQ","32TLR",
+                   "32TLS","32TLT","32TMQ","32TMR","32TMS","32TMT","32TNR","32TNS","32TNT","32TPR","32TPS","32TPT",
+                   "32TQR","32TQS","32TQT","32ULU","32UMU","32UMV","32UNA","32UNU","32UNV","32UPA","32UPU","32UPV",
+                   "32UQA","32UQU","32UQV","33TUL","33TUM","33TUN","33TVM","33TVN","33TWM","33TWN","33UUP","33UUQ",
+                   "33UVP","33UWP","33UXP"]
 for days_ago in [2]:
     dag_id = f"sencast_alpinespace_sentinel2_{days_ago}"
     globals()[dag_id] = create_dag(dag_id,
