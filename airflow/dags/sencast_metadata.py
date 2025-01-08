@@ -40,7 +40,7 @@ dag = DAG(
     user_defined_macros={'git_repos': '/opt/airflow/filesystem/git',
                          'git_name': 'alplakes-sencast-metadata',
                          'docker': 'eawag/sencast-metadata:1.0.0',
-                         'lake_geometry': 'https://eawagrs.s3.eu-central-1.amazonaws.com/metadata/lakes.json',
+                         'lake_geometry': 'https://eawagrs.s3.eu-central-1.amazonaws.com/alplakes/metadata/lakes.json',
                          'git_remote': 'https://github.com/eawag-surface-waters-research/alplakes-sencast-metadata.git',
                          'filesystem': '/opt/airflow/filesystem',
                          'FILESYSTEM': Variable.get("FILESYSTEM")}
