@@ -96,14 +96,6 @@ def create_dag(dag_id, prefix, run_date, schedule_interval, download_pool="defau
         dag=dag,
     )
 
-    remove_results = BashOperator(
-        task_id='remove_results',
-        bash_command='f="{{ DIAS }}/output_data/{{ prefix }}_{{ run_date(ds) }}_{{ wkt }}_{{ run_date(ds,"%Y-%m-%d") }}_{{ run_date(ds,"%Y-%m-%d") }}"; [ -d "$f" ] && '
-                     'rm -rf "$f" || echo "Folder does not exist."',
-        on_failure_callback=report_failure,
-        dag=dag,
-    )
-
     remove_parameter_file = BashOperator(
         task_id='remove_parameter_file',
         bash_command='rm -rf {{ git_repos }}/{{ git_name }}/parameters/{{ prefix }}_{{ run_date(ds) }}*',
@@ -111,7 +103,7 @@ def create_dag(dag_id, prefix, run_date, schedule_interval, download_pool="defau
         dag=dag,
     )
 
-    clone_repo >> write_parameter_files >> download_products >> run_sencast >> remove_results >> remove_parameter_file
+    clone_repo >> write_parameter_files >> download_products >> run_sencast >> remove_parameter_file
 
     return dag
 
