@@ -8,6 +8,18 @@ from functions.email import report_failure
 
 from airflow import DAG
 
+"""
+Example config input for specific reprocessing
+{ "lakes": "zurich,geneva",
+  "period": "20190109_20221101"
+}
+
+Example config input for full reprocessing
+{ "lakes": "false",
+  "period": "false"
+}
+"""
+
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
@@ -40,7 +52,7 @@ dag = DAG(
     user_defined_macros={'git_repos': '/opt/airflow/filesystem/git',
                          'git_name': 'alplakes-sencast-metadata',
                          'docker': 'eawag/sencast-metadata:1.0.0',
-                         'lake_geometry': 'https://eawagrs.s3.eu-central-1.amazonaws.com/alplakes/metadata/lakes.json',
+                         'lake_geometry': 'https://eawagrs.s3.eu-central-1.amazonaws.com/alplakes/metadata/lakes.geojson',
                          'git_remote': 'https://github.com/eawag-surface-waters-research/alplakes-sencast-metadata.git',
                          'filesystem': '/opt/airflow/filesystem',
                          'FILESYSTEM': Variable.get("FILESYSTEM")}
@@ -99,7 +111,9 @@ with dag:
                          '-rm {{ params.remote_metadata }} '
                          '-ms {{ params.metadata_summary }} '
                          '-mn {{ params.metadata_name }} '
-                         '-u -r -n ',
+                         '-u -r'
+                         '-n {{ dag_run.conf.lakes }}'
+                         '-p {{ dag_run.conf.period }}',
             params={
                 'AWS_ID': Variable.get("AWS_ACCESS_KEY_ID"),
                 'AWS_KEY': Variable.get("AWS_SECRET_ACCESS_KEY"),
