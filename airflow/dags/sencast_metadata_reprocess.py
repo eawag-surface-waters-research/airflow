@@ -10,12 +10,14 @@ from airflow import DAG
 
 """
 Example config input for specific reprocessing
-{ "lakes": "zurich,geneva",
+{ 
+  "lakes": "zurich,geneva",
   "period": "20190109_20221101"
 }
 
 Example config input for full reprocessing
-{ "lakes": "false",
+{ 
+  "lakes": "false",
   "period": "false"
 }
 """
@@ -111,9 +113,9 @@ with dag:
                          '-rm {{ params.remote_metadata }} '
                          '-ms {{ params.metadata_summary }} '
                          '-mn {{ params.metadata_name }} '
-                         '-u -r'
-                         '-n {{ dag_run.conf.lakes }}'
-                         '-p {{ dag_run.conf.period }}',
+                         '-u -r '
+                         '-n {{ dag_run.conf.lakes }} '
+                         '-p {{ dag_run.conf.period }} ',
             params={
                 'AWS_ID': Variable.get("AWS_ACCESS_KEY_ID"),
                 'AWS_KEY': Variable.get("AWS_SECRET_ACCESS_KEY"),
