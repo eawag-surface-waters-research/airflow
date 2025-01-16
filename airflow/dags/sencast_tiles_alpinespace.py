@@ -96,6 +96,8 @@ def create_dag(dag_id, prefix, run_date, tiles, schedule_interval, download_pool
                                  '--rm '
                                  '-i {{ docker }} -e {{ environment_file }} -p {{ prefix }}_{{ run_date(ds) }}_' + tile + '.ini',
                     pool=run_pool,
+                    retry_exponential_backoff=True,
+                    retries=3,
                     on_failure_callback=report_failure,
                     dag=dag,
                 )
