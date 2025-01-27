@@ -1,5 +1,6 @@
 import os
 import json
+import gzip
 import boto3
 import requests
 import tempfile
@@ -132,6 +133,14 @@ def cache_simulation_data(ds, **kwargs):
             "{}/simulations/layer_alplakes/{}/{}/{}/{}/{}/{}".format(api, model, lake, parameter, start, end, depth))
         if response.status_code == 200:
             temperature = response.text
+            try:
+                with tempfile.NamedTemporaryFile(mode='wb', delete=False) as temp_file:
+                    temp_filename = temp_file.name
+                    with gzip.GzipFile(fileobj=temp_file, mode='wb') as gz_file:
+                        gz_file.write(temperature.encode('utf-8'))
+                s3.upload_file(temp_filename, bucket_key, "simulations/{}/cache/{}/{}.txt.gz".format(model, lake, parameter))
+            except Exception as e:
+                print(e)
             with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
                 temp_filename = temp_file.name
                 temp_file.write(temperature)
