@@ -105,7 +105,7 @@ def cache_simulation_data(ds, **kwargs):
     lake_metadata = response.json()
 
     default_depth = 1
-    default_period = -7
+    default_period = -6
     response = requests.get("{}/static/website/metadata/master/{}.json".format(bucket, lake))
     if response.status_code != 200:
         raise ValueError("Unable to access {}/static/website/metadata/master/{}.json".format(bucket, lake))
@@ -171,10 +171,6 @@ def cache_simulation_data(ds, **kwargs):
         raise ValueError("Problems connecting to forecast in {}".format(bucket))
     if lake not in forecast or int(datetime.fromisoformat(data["time"][-1]).timestamp() * 1000) > forecast[lake]["time"][-1] + (6 * 3600 * 1000):
         out = {"time": [int(datetime.fromisoformat(d).timestamp() * 1000) for d in data["time"]], "temperature": data["variable"]["data"]}
-        if lake in forecast and "ice" in forecast[lake]:
-            out["ice"] = interpolate(forecast[lake]["time"], out["time"], forecast[lake]["ice"])
-        if lake in forecast and "oxygen" in forecast[lake]:
-            out["oxygen"] = interpolate(forecast[lake]["time"], out["time"], forecast[lake]["oxygen"])
         forecast[lake] = out
         with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
             temp_filename = temp_file.name

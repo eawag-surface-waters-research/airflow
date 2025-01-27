@@ -47,9 +47,7 @@ def cache_simstrat_operational_data(ds, **kwargs):
                       aws_secret_access_key=aws_secret_access_key)
 
     parameters = [
-        {"simstrat_key": "T", "alplakes_key": "temperature", "depth": 0},
-        {"simstrat_key": "TotalIceH", "alplakes_key": "ice", "depth": 0},
-        {"simstrat_key": "OxygenSat", "alplakes_key": "oxygen", "depth": -1}
+        {"simstrat_key": "T", "alplakes_key": "temperature", "depth": 0}
     ]
 
     rename = {
