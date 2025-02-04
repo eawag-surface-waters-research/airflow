@@ -1,10 +1,12 @@
 import os
 import json
 import time
+import gzip
 import boto3
 import zipfile
 import requests
 import tempfile
+import numpy as np
 from datetime import datetime, timedelta, timezone
 
 
@@ -16,6 +18,11 @@ def zip_files(base_folder, file_paths, output_filename):
     with zipfile.ZipFile(output_filename, 'w') as f:
         for file_path in file_paths:
             f.write(file_path, os.path.relpath(file_path, base_folder))
+
+
+def custom_depth_array(max_num):
+    arr = np.concatenate([np.arange(1, 20, 1), np.arange(20, 60, 2), np.arange(60, 1000, 10)])
+    return np.sort(np.append(arr[arr < max_num][:-1], max_num))[::-1]
 
 
 def validate_simstrat_operational_data(ds, **kwargs):
@@ -131,6 +138,23 @@ def cache_simstrat_operational_data(ds, **kwargs):
                 s3.upload_file(temp_filename, bucket_key,
                                "simulations/simstrat/cache/{}/heatmap_{}.json".format(lake["name"], parameter))
                 os.remove(temp_filename)
+                try:
+                    depths = np.array(data["depth"]["data"])
+                    depth_array = custom_depth_array(np.max(depths))
+                    data["depth"]["data"] = depth_array.tolist()
+                    indices = np.isin(depths, depth_array)
+                    values = np.array(data["variables"][parameter]["data"])
+                    values = values[indices, :]
+                    data["variables"][parameter]["data"] = values.tolist()
+                    with tempfile.NamedTemporaryFile(mode='wb', delete=False) as temp_file:
+                        temp_filename = temp_file.name
+                        with gzip.GzipFile(fileobj=temp_file, mode='wb') as gz_file:
+                            gz_file.write(json.dumps(data).encode('utf-8'))
+                    s3.upload_file(temp_filename, bucket_key,
+                                   "simulations/simstrat/cache/{}/heatmap_{}.json.gz".format(lake["name"], parameter))
+                    os.remove(temp_filename)
+                except Exception as e:
+                    print(e)
             else:
                 print("Failed to retrieve simulations", url)
 
