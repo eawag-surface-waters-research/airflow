@@ -1,4 +1,5 @@
 import os
+import math
 import json
 import gzip
 import boto3
@@ -154,8 +155,9 @@ def cache_simulation_data(ds, **kwargs):
                                                                    "values": out["variables"]["temperature"]["data"]}
                         rmse = calculate_rmse(live[location]["depth"][depth]["model"],
                                               live[location]["depth"][depth]["insitu"])
-                        rmse_total.append(rmse)
-                        live[location]["depth"][depth]["rmse"] = round(rmse, 1)
+                        if isinstance(rmse, float) and not math.isnan(rmse):
+                            rmse_total.append(rmse)
+                            live[location]["depth"][depth]["rmse"] = round(rmse, 1)
                     except:
                         print("Failed to collect insitu")
             if len(rmse_total) > 0:
