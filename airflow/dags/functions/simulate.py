@@ -161,7 +161,7 @@ def cache_simulation_data(ds, **kwargs):
                     except:
                         print("Failed to collect insitu")
             if len(rmse_total) > 0:
-                lake_metadata["rmse"] = round(np.nanmean(np.array(rmse_total)), 1)
+                lake_metadata["rmse"] = round(rmse_total[0], 1)
                 with open("performance.json", mode='w') as temp_file:
                     json.dump(live, temp_file)
                 with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
