@@ -1,5 +1,6 @@
 import os
 import json
+import math
 import time
 import gzip
 import boto3
@@ -8,6 +9,7 @@ import requests
 import tempfile
 import numpy as np
 from datetime import datetime, timedelta, timezone
+from functions.general import download_datalakes_data, calculate_rmse
 
 
 def iso_to_unix(input_time):
@@ -114,7 +116,63 @@ def cache_simstrat_operational_data(ds, **kwargs):
     s3.upload_file(temp_filename, bucket_key, "simulations/forecast.json")
     os.remove(temp_filename)
 
+    # Get version of website metadata
+    branch = "master"
+    try:
+        response = requests.get(
+            "https://raw.githubusercontent.com/eawag-surface-waters-research/alplakes-react/refs/heads/master/src/config.json")
+        if response.status_code == 200:
+            branch = response.json()["branch"]
+    except:
+        print("Failed to find branch")
+
+    response = requests.get("{}/static/website/metadata/{}/performance.json".format(bucket, branch))
+    if response.status_code == 200:
+        performance_info = response.json()
+
     for lake in lakes:
+        # Performance
+        try:
+            if "simstrat" in performance_info and lake["name"] in performance_info["simstrat"]:
+                live = performance_info["simstrat"][lake["name"]].copy()
+                stop = datetime.now() - timedelta(days=1)
+                stop = stop.replace(hour=23, minute=0, second=0, microsecond=0)
+                start = stop - timedelta(days=10)
+                rmse_total = []
+                for location in live:
+                    for depth in live[location]["depth"]:
+                        try:
+                            if live[location]["type"] == "datalakes":
+                                live[location]["depth"][depth]["insitu"] = (
+                                    download_datalakes_data(live[location]["id"],live[location]["depth"][depth]["depth"], start,stop))
+                            else:
+                                raise ValueError("Unrecognised data source")
+
+                            response = requests.get(
+                                "{}/simulations/1d/point/simstrat/{}/{}/{}/{}?variables=T"
+                                .format(api, lake["name"], start.strftime("%Y%m%d2300"), stop.strftime("%Y%m%d2300"), live[location]["depth"][depth]["depth"]))
+                            if response.status_code != 200:
+                                raise ValueError("Failed to get model values")
+                            out = response.json()
+                            live[location]["depth"][depth]["model"] = {"time": out["time"],
+                                                                       "values": out["variables"]["T"]["data"]}
+                            rmse = calculate_rmse(live[location]["depth"][depth]["model"],
+                                                  live[location]["depth"][depth]["insitu"])
+                            if isinstance(rmse, float) and not math.isnan(rmse):
+                                rmse_total.append(rmse)
+                                live[location]["depth"][depth]["rmse"] = round(rmse, 1)
+                        except:
+                            print("Failed to collect insitu")
+                if len(rmse_total) > 0:
+                    lake["rmse"] = round(rmse_total[0], 1)
+                    with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
+                        temp_filename = temp_file.name
+                        json.dump(live, temp_file)
+                    s3.upload_file(temp_filename, bucket_key,
+                                   "simulations/simstrat/cache/{}/performance.json".format(lake["name"]))
+        except:
+            print("Failed to add performance for {}".format(lake["name"]))
+
         # Metadata
         with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
             temp_filename = temp_file.name

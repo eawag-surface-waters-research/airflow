@@ -130,8 +130,10 @@ def cache_simulation_data(ds, **kwargs):
 
     # Performance
     try:
-        if "live" in lake_info["forecast"]["3d_model"]["performance"]:
-            live = lake_info["forecast"]["3d_model"]["performance"]["live"].copy()
+        response = requests.get("{}/static/website/metadata/{}/performance.json".format(bucket, branch))
+        performance_info = response.json()
+        if model in performance_info and lake in performance_info[model]:
+            live = performance_info[model][lake].copy()
             stop = datetime.now() - timedelta(days=1)
             stop = stop.replace(hour=23, minute=0, second=0, microsecond=0)
             start = stop - timedelta(days=10)
@@ -162,8 +164,6 @@ def cache_simulation_data(ds, **kwargs):
                         print("Failed to collect insitu")
             if len(rmse_total) > 0:
                 lake_metadata["rmse"] = round(rmse_total[0], 1)
-                with open("performance.json", mode='w') as temp_file:
-                    json.dump(live, temp_file)
                 with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
                     temp_filename = temp_file.name
                     json.dump(live, temp_file)

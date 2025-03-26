@@ -2,6 +2,7 @@ import requests
 import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
+from scipy.interpolate import interp1d
 from airflow.utils.email import send_email
 
 
@@ -68,49 +69,51 @@ def download_datalakes_data(datalakes_id, depth, start, stop, value_id=5):
 def calculate_rmse(dataset1, dataset2):
     """
     Calculate the Root Mean Square Error (RMSE) between two datasets,
-    where one dataset has timestamps every 3 hours and the other has timestamps every 10 minutes.
-    Only consider a 10-minute timestamp if it is within 20 minutes of the 3-hour timestamp.
+    Interpolates dataset2 to match dataset1's timestamps before computing RMSE.
+    Only interpolates within the range of dataset2's timestamps (no extrapolation).
+    Computes RMSE only for the overlapping time period where both datasets have data.
 
     Args:
-        dataset1 (dict): A dictionary with 'time' (every 3 hours) and 'values' lists for the first dataset.
-        dataset2 (dict): A dictionary with 'time' (every 10 minutes) and 'values' lists for the second dataset.
+        dataset1 (dict): A dictionary with 'time' and 'values' lists for the first dataset.
+        dataset2 (dict): A dictionary with 'time' and 'values' lists for the second dataset.
 
     Returns:
         float: The RMSE value.
     """
-    # Convert time strings to datetime objects for easier manipulation
-    time1 = [datetime.fromisoformat(t) for t in dataset1['time']]
-    time2 = [datetime.fromisoformat(t) for t in dataset2['time']]
+    # Convert time strings to datetime objects
+    time1 = np.array([datetime.fromisoformat(t) for t in dataset1['time']])
+    time2 = np.array([datetime.fromisoformat(t) for t in dataset2['time']])
+    values2 = np.array(dataset2['values'], dtype=float)
 
-    # Time threshold for matching (20 minutes)
-    time_threshold = timedelta(minutes=20)
+    # Convert datetime objects to numerical timestamps (seconds since epoch)
+    time1_numeric = np.array([t.timestamp() for t in time1])
+    time2_numeric = np.array([t.timestamp() for t in time2])
 
-    # For each time in dataset1 (3-hour points), find the closest time in dataset2 (10-min points)
-    aligned_values1 = []
-    aligned_values2 = []
+    # Determine overlapping time period
+    min_time = max(time1_numeric[0], time2_numeric[0])
+    max_time = min(time1_numeric[-1], time2_numeric[-1])
 
-    for t1 in time1:
-        # Find the closest time in dataset2 that is within 20 minutes of t1
-        valid_times = [t2 for t2 in time2 if abs(t2 - t1) <= time_threshold]
+    # Filter time1 to only include timestamps within the overlapping range
+    valid_range = (time1_numeric >= min_time) & (time1_numeric <= max_time)
+    time1_numeric_interp = time1_numeric[valid_range]
 
-        if valid_times:
-            # Find the closest time from the valid options
-            closest_time = min(valid_times, key=lambda t2: abs(t2 - t1))
-            # Get the index of the closest time in dataset2
-            index2 = time2.index(closest_time)
+    if len(time1_numeric_interp) == 0:
+        raise ValueError("No valid timestamps for interpolation in overlapping period.")
 
-            # Append the corresponding values to the aligned lists
-            aligned_values1.append(float(dataset1['values'][time1.index(t1)]))  # Ensure it's a float
-            aligned_values2.append(float(dataset2['values'][index2]))  # Ensure it's a float
+    # Perform linear interpolation, ignoring extrapolation
+    interp_func = interp1d(time2_numeric, values2, kind='linear', bounds_error=False, fill_value=np.nan)
+    interpolated_values2 = interp_func(time1_numeric_interp)
 
-    # Ensure both lists of aligned values have the same length
-    if len(aligned_values1) != len(aligned_values2):
-        raise ValueError("The datasets do not align properly in time or length.")
+    # Remove NaN values (which occur due to out-of-bounds timestamps)
+    valid_indices = ~np.isnan(interpolated_values2)
+    aligned_values1 = np.array(dataset1['values'], dtype=float)[valid_range][valid_indices]
+    aligned_values2 = interpolated_values2[valid_indices]
 
-    # Compute the squared differences between corresponding values
-    squared_differences = [(v1 - v2) ** 2 for v1, v2 in zip(aligned_values1, aligned_values2)]
+    if len(aligned_values1) == 0 or len(aligned_values2) == 0:
+        raise ValueError("No valid matching data points after interpolation in overlapping period.")
 
-    # Calculate RMSE
+    # Compute RMSE
+    squared_differences = (aligned_values1 - aligned_values2) ** 2
     mse = np.mean(squared_differences)
     rmse = np.sqrt(mse)
 
