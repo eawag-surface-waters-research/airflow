@@ -96,7 +96,6 @@ def create_dag(dag_id, parameters):
                      "mkdir -p {{ filesystem }}/git;"
                      "cd {{ filesystem }}/git;"
                      "git clone {{ repo_https }};"
-                     "git config --global core.fileMode false;"
                      "chmod -R 777 {{ repo_name }};"
                      "cd {{ repo_name }};"
                      'echo "{{ params.creds }}" > creds.json;'
