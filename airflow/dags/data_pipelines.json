@@ -1,14 +1,14 @@
 [
     {
-        "id": "lake_hallwil_mooring",
-        "docker_id": "hallwil",
-        "repo_https": "https://gitlab.renkulab.io/eawag-surf/lake-hallwil-mooring.git",
-        "repo_name": "lake-hallwil-mooring",
-        "upload": false,
-        "datalakes_ids": [1046],
-        "datalakes_time_gap_failure_notification": [3],
-        "schedule_interval": false,
-        "credential_id": "lake_hallwil_mooring",
+        "id": "lexplore_meteostation",
+        "docker_id": "lexplore_meteostation",
+        "repo_https": "https://gitlab.renkulab.io/lexplore/meteostation.git",
+        "repo_name": "meteostation",
+        "datalakes": [
+            {"id":  459, "failure_notification": 3}
+        ],
+        "schedule_interval": "3,23,43 * * * *",
+        "credential_id": "lexplore",
         "credential_keys": ["ftp", "user", "password"],
         "email": ["james.runnalls@eawag.ch"]
     }
