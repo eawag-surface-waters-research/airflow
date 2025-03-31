@@ -100,8 +100,7 @@ def create_dag(dag_id, parameters):
                      "chmod -R 777 {{ repo_name }};"
                      "cd {{ repo_name }};"
                      'echo "{{ params.creds }}" > creds.json;'
-                     "docker build -t {{ docker_id }} .;"
-                     "docker run -v {{ FILESYSTEM }}/git/{{ repo_name }}:/repository --rm {{ docker_id }} -d)",
+                     "docker build -t {{ docker_id }} .)",
         params={'creds': create_credentials(parameters["credential_id"], parameters["credential_keys"])},
         on_failure_callback=report_failure,
         dag=dag,
@@ -110,7 +109,7 @@ def create_dag(dag_id, parameters):
     run_pipeline = BashOperator(
         task_id='run_pipeline',
         bash_command='docker run -e AWS_ACCESS_KEY_ID={{ params.AWS_ID }} -e AWS_SECRET_ACCESS_KEY={{ params.AWS_KEY }} '
-                     '-v {{ FILESYSTEM }}/git/{{ repo_name }}:/repository --rm {{ docker_id }} -p -uf -dl {{ datalakes_ids }}',
+                     '-v {{ FILESYSTEM }}/git/{{ repo_name }}:/repository --rm {{ docker_id }} -d -p -uf -dl {{ datalakes_ids }}',
         params={
             'AWS_ID': Variable.get("AWS_ACCESS_KEY_ID"),
             'AWS_KEY': Variable.get("AWS_SECRET_ACCESS_KEY")},
