@@ -11,5 +11,18 @@
         "credential_id": "lexplore",
         "credential_keys": ["ftp", "user", "password"],
         "email": ["james.runnalls@eawag.ch"]
+    },
+    {
+        "id": "lexplore_wisp",
+        "docker_id": "lexplore_wisp",
+        "repo_https": "https://gitlab.renkulab.io/lexplore/lexplore-wisp-station.git",
+        "repo_name": "lexplore-wisp-station",
+        "datalakes": [
+            {"id":  1069, "failure_notification": 48}
+        ],
+        "schedule_interval": "0 0 * * *",
+        "credential_id": "lexplore_wisp",
+        "credential_keys": ["user", "password"],
+        "email": ["james.runnalls@eawag.ch"]
     }
 ]
