@@ -24,5 +24,19 @@
         "credential_id": "lexplore_wisp",
         "credential_keys": ["user", "password"],
         "email": ["james.runnalls@eawag.ch"]
+    },
+    {
+        "id": "lexplore_thermister_chain",
+        "docker_id": "lexplore_thermister_chain",
+        "repo_https": "https://gitlab.renkulab.io/lexplore/thermister-chain.git",
+        "repo_name": "thermister-chain",
+        "datalakes": [
+            {"id":  448, "failure_notification": 1}
+        ],
+        "schedule_interval": "2,32 * * * *",
+        "credential_id": "lexplore",
+        "credential_keys": ["ftp", "user", "password"],
+        "email": ["james.runnalls@eawag.ch"]
     }
+
 ]
