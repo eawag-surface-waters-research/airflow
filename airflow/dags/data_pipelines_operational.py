@@ -137,5 +137,8 @@ with open('dags/data_pipelines.json') as f:
     pipelines = json.load(f)
 
 for pipeline in pipelines:
-    dag_id = "data_pipelines_operational_" + pipeline["id"]
-    globals()[dag_id] = create_dag(dag_id, pipeline)
+    try:
+        dag_id = "data_pipelines_operational_" + pipeline["id"]
+        globals()[dag_id] = create_dag(dag_id, pipeline)
+    except Exception as e:
+        print(f"Failed to create DAG {pipeline.get('id')}: {e}")
