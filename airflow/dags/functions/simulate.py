@@ -11,7 +11,7 @@ from datetime import datetime, timedelta, timezone
 from dateutil.relativedelta import relativedelta, SU
 from airflow.utils.email import send_email
 from jinja2 import Template
-from functions.general import download_datalakes_data, calculate_rmse
+from functions.general import download_datalakes_data, calculate_rmse, download_zurich_police_data
 
 
 def get_last_sunday(dt):
@@ -144,6 +144,9 @@ def cache_simulation_data(ds, **kwargs):
                         if live[location]["type"] == "datalakes":
                             live[location]["depth"][depth]["insitu"] = (
                                 download_datalakes_data(live[location]["id"], live[location]["depth"][depth]["depth"], start, stop))
+                        elif live[location]["type"] == "zurich_police":
+                            live[location]["depth"][depth]["insitu"] = (
+                                download_zurich_police_data(live[location]["id"], start, stop))
                         else:
                             raise ValueError("Unrecognised data source")
                         response = requests.get(

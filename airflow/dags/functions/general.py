@@ -1,12 +1,12 @@
 import requests
 import numpy as np
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from scipy.interpolate import interp1d
 from airflow.utils.email import send_email
 
 
-def download_datalakes_data(datalakes_id, depth, start, stop, value_id=5):
+def download_datalakes_data(datalakes_id, depth, start, stop):
     response = requests.get("https://api.datalakes-eawag.ch/datasetparameters?datasets_id={}".format(datalakes_id))
     if response.status_code != 200:
         raise ValueError("Failed to get datalakes parameters")
@@ -63,6 +63,44 @@ def download_datalakes_data(datalakes_id, depth, start, stop, value_id=5):
         raise ValueError("Not enough data to compare")
     time = df['time'].dt.strftime('%Y-%m-%dT%H:%M:%S+00:00').tolist()
     values = df['value'].tolist()
+    return {"time": time, "values": values}
+
+
+def download_zurich_police_data(station, start, stop):
+    start = start + timedelta(days=1)
+    stop = stop + timedelta(days=1)
+    time = []
+    values = []
+    all_results = []
+    limit = 1000
+    for i in range(5):
+        offset = i * limit
+        url = (
+            f"https://tecdottir.herokuapp.com/measurements/{station}"
+            f"?startDate={start.strftime('%Y-%m-%d')}"
+            f"&endDate={stop.strftime('%Y-%m-%d')}"
+            f"&sort=timestamp_cet%20asc"
+            f"&limit={limit}&offset={offset}"
+        )
+        response = requests.get(url)
+        if response.status_code != 200:
+            return False
+        data = response.json()
+        results = data.get("result", [])
+        all_results.extend(results)
+
+        if len(results) < limit:
+            break
+
+    for i in range(len(all_results)):
+        try:
+            if all_results[i]["values"]["water_temperature"]["status"] == "ok":
+                time.append(datetime.strptime(all_results[i]["timestamp"], "%Y-%m-%dT%H:%M:%S.%fZ").replace(
+                    tzinfo=timezone.utc).strftime('%Y-%m-%dT%H:%M:%S+00:00'))
+                values.append(float(all_results[i]["values"]["water_temperature"]["value"]))
+        except:
+            pass
+
     return {"time": time, "values": values}
 
 

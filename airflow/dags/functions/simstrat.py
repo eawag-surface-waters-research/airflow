@@ -144,7 +144,7 @@ def cache_simstrat_operational_data(ds, **kwargs):
                         try:
                             if live[location]["type"] == "datalakes":
                                 live[location]["depth"][depth]["insitu"] = (
-                                    download_datalakes_data(live[location]["id"],live[location]["depth"][depth]["depth"], start,stop))
+                                    download_datalakes_data(live[location]["id"],live[location]["depth"][depth]["depth"], start, stop))
                             else:
                                 raise ValueError("Unrecognised data source")
 
