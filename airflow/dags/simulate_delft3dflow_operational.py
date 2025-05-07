@@ -158,14 +158,7 @@ def create_dag(dag_id, parameters):
         dag=dag,
     )
 
-    update_datalakes = BashOperator(
-        task_id='update_datalakes',
-        bash_command="curl https://api.datalakes-eawag.ch/externaldata/update/alplakes",
-        on_failure_callback=report_failure,
-        dag=dag,
-    )
-
-    prepare_simulation_files >> run_simulation >> postprocess_simulation_output >> events_simulation_output >> event_notifications >> send_results >> remove_results >> cache_data >> update_datalakes
+    prepare_simulation_files >> run_simulation >> postprocess_simulation_output >> events_simulation_output >> event_notifications >> send_results >> remove_results >> cache_data
 
     return dag
 
