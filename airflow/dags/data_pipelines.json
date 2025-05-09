@@ -39,6 +39,19 @@
         "email": ["james.runnalls@eawag.ch"]
     },
     {
+        "id": "buchillon",
+        "docker_id": "buchillon",
+        "repo_https": "https://gitlab.renkulab.io/lexplore/buchillon.git",
+        "repo_name": "buchillon",
+        "datalakes": [
+            {"id":  597, "failure_notification": 12}
+        ],
+        "schedule_interval": "3 * * * *",
+        "credential_id": "lexplore",
+        "credential_keys": ["ftp", "user", "password"],
+        "email": ["james.runnalls@eawag.ch"]
+    },
+    {
         "id": "greifensee_profiler",
         "docker_id": "greifensee_profiler",
         "repo_https": "https://gitlab.renkulab.io/eawag-surf/lake-greifen-profiles.git",
