@@ -195,6 +195,7 @@ def collect_water_temperature(ds, **kwargs):
             {"id": 1046, "parameters": "z?x_index=0", "label": "Hallwil Chain", "lake": "hallwil"},
             {"id": 956, "parameters": "z?x_index=0", "label": "Murten Chain", "lake": "murten"},
             {"id": 1077, "parameters": "z?x_index=0", "label": "Aegeri Idronaut", "lake": "ageri"},
+            {"id": 1334, "parameters": "z?x_index=0", "label": "Castagnola Mooring", "lake": "lugano"},
         ]
         for station in stations:
             response = requests.get(
