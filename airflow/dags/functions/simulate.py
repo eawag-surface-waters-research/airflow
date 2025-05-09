@@ -163,7 +163,8 @@ def cache_simulation_data(ds, **kwargs):
                         if isinstance(rmse, float) and not math.isnan(rmse):
                             rmse_total.append(rmse)
                             live[location]["depth"][depth]["rmse"] = round(rmse, 1)
-                    except:
+                    except Exception as e:
+                        print(e)
                         print("Failed to collect insitu")
             if len(rmse_total) > 0:
                 lake_metadata["rmse"] = round(rmse_total[0], 1)

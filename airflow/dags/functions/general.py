@@ -16,6 +16,8 @@ def download_datalakes_data(datalakes_id, depth, start, stop):
     value_x = [p for p in parameters if p.get("parameters_id") == 5]
     if len(value_x) == 1 :
         value_axis = value_x[0]["axis"]
+    elif "z" in value_x[0]["axis"]:
+        value_axis = value_x[0]["axis"]
     else:
         value_xx = [p for p in value_x if "{}m".format(depth) in p["detail"]]
         if len(value_xx) == 1:
@@ -23,7 +25,10 @@ def download_datalakes_data(datalakes_id, depth, start, stop):
         else:
             raise ValueError("Failed to find value parameter")
     if "z" in value_axis:
-        depth_axis = [p for p in parameters if p.get("parameters_id") == 2][0]["axis"]
+        d = [p for p in parameters if p.get("parameters_id") == 2]
+        if len(d) == 0:
+            d = [p for p in parameters if p.get("parameters_id") == 18]
+        depth_axis = d[0]["axis"]
 
     response = requests.get("https://api.datalakes-eawag.ch/files?datasets_id={}".format(datalakes_id))
     if response.status_code != 200:
