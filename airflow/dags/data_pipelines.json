@@ -77,5 +77,18 @@
         "credential_id": "ticino_moorings",
         "credential_keys": ["ftp", "user", "password"],
         "email": ["james.runnalls@eawag.ch"]
+    },
+    {
+        "id": "murten_mooring",
+        "docker_id": "murten_mooring",
+        "repo_https": "https://gitlab.renkulab.io/eawag-surf/lake-murten-mooring.git",
+        "repo_name": "lake-murten-mooring",
+        "datalakes": [
+            {"id":  956, "failure_notification": 6}
+        ],
+        "schedule_interval": "4 * * * *",
+        "credential_id": "murten_mooring",
+        "credential_keys": ["ftp", "user", "password"],
+        "email": ["james.runnalls@eawag.ch"]
     }
 ]
