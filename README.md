@@ -164,6 +164,21 @@ In order to backfill jobs in the past the Airflow [command line](https://airflow
 
 The `nohup ... &` syntax allows you close the terminal and keep the job running.
 
+## FirecREST
+
+FirecREST can be used to run jobs on the CSCS cluster from this airflow instance. 
+
+### Get credentials
+
+You need to generate FIRECREST_CLIENT_ID and FIRECREST_CLIENT_SECRET from https://developer.cscs.ch/
+
+1. Applications >> Add new application >> Give name then defaults okay
+2. Select created application
+3. Subscriptions >> + SUBSCRIBE APIS >> FirecREST-HPC V2
+4. Production keys >> Use default then copy FIRECREST_CLIENT_ID and FIRECREST_CLIENT_SECRET
+
+### 
+
 [mit-by]: https://opensource.org/licenses/MIT
 [mit-by-shield]: https://img.shields.io/badge/License-MIT-g.svg
 [python-by-shield]: https://img.shields.io/badge/Python-3.9-g
