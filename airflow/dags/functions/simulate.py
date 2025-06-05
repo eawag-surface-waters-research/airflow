@@ -394,7 +394,11 @@ def upload_pickup(ds, **kwargs):
     for file in os.listdir(os.path.join(folder, "run")):
         if file.startswith("pickup"):
             file_parts = file.split(".")
-            if len(file_parts) == 3 and file[0] == "pickup" and len(file[1]) == 8 and file[2] in ["meta", "data"]:
-                s3.upload_file(os.path.join(folder, "run", file), bucket_key, "simulations/{}/restart-files/{}/{}".format(model, lake, file))
+            if (len(file_parts) == 3 and file_parts[0] == "pickup" and len(file_parts[1]) == 8 and
+                    file_parts[2] in ["meta", "data"]):
+                file_path = os.path.join(folder, "run", file)
+                if os.path.getsize(file_path) > 100:
+                    print("Uploading: {}".format(file))
+                    s3.upload_file(file_path, bucket_key, "simulations/{}/restart-files/{}/{}".format(model, lake, file))
 
 
