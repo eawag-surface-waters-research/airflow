@@ -1,5 +1,5 @@
 import json
-from datetime import timedelta, datetime
+from datetime import timedelta
 
 from airflow.operators.bash import BashOperator
 from airflow.operators.python_operator import PythonOperator
@@ -7,8 +7,8 @@ from airflow.models import Variable
 from airflow.utils.dates import days_ago
 
 from functions.email import report_failure
-from functions.simulate import (get_last_sunday, get_end_date, get_today, get_restart, number_of_cores,
-                                cache_simulation_data, format_simulation_directory, process_event_notifications, upload_pickup)
+from functions.simulate import (get_last_sunday, get_end_date, get_today, get_restart, cache_simulation_data,
+                                format_simulation_directory, process_event_notifications, upload_pickup)
 
 from airflow import DAG
 
@@ -47,14 +47,14 @@ def create_dag(dag_id, parameters):
                              'FILESYSTEM': Variable.get("FILESYSTEM"),
                              'model': 'mitgcm/' + parameters["simulation_id"],
                              'docker': parameters["docker"],
-                             'simulation_folder_prefix': format_simulation_directory(parameters["docker"]),
+                             'simulation_folder_prefix': format_simulation_directory(parameters["docker"], "mitgcm"),
                              'start': get_last_sunday,
                              'end': get_end_date,
                              'today': get_today,
                              'restart': get_restart,
                              'bucket': 'alplakes-eawag',
                              'api': "http://eaw-alplakes2:8000",
-                             'cores': parameters["cores"],
+                             'threads': parameters["threads"],
                              'id': parameters["simulation_id"],
                              'simulation_repo_name': "alplakes-simulations",
                              'simulation_repo_https': "https://github.com/eawag-surface-waters-research/alplakes-simulations.git",
@@ -62,8 +62,8 @@ def create_dag(dag_id, parameters):
                              'api_server': 'eaw-alplakes2',
                              'API_PASSWORD': Variable.get("API_PASSWORD"),
                              'api_server_folder': "/nfsmount/filesystem/media/simulations/mitgcm/results/{}".format(
-                                 parameters["simulation_id"]),
-                             'threads': number_of_cores}
+                                 parameters["simulation_id"])
+                             }
     )
 
     prepare_simulation_files = BashOperator(
@@ -71,15 +71,16 @@ def create_dag(dag_id, parameters):
         bash_command="mkdir -p {{ filesystem }}/git;"
                      "cd {{ filesystem }}/git;"
                      "git clone {{ simulation_repo_https }} && cd {{ simulation_repo_name }} || cd {{ simulation_repo_name }} && git stash && git pull;"
-                     "python src/main.py -m {{ model }} -d {{ docker }} -t {{ today(ds) }} -s {{ start(ds) }} -e {{ end(ds) }} -a {{ api }} -th {{ threads }}",
+                     "python src/main.py -m {{ model }} -d {{ docker }} -t {{ today(ds) }} -s {{ start(ds) }} -e {{ end(ds) }} -a {{ api }} -th {{ threads }};"
+                     "chmod -R 777 runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}_{{ threads }}",
         on_failure_callback=report_failure,
         dag=dag,
     )
 
     compile_simulation = BashOperator(
         task_id='compile_simulation',
-        bash_command='cd {{ FILESYSTEM }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }};'
-                     'docker build -t {{ docker }}_{{ model }}_{{ threads }} .',
+        bash_command='cd {{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}_{{ threads }};'
+                     'docker build -t {{ docker }}_mitgcm_{{ id }}_{{ threads }} .',
         on_failure_callback=report_failure,
         retries=2,
         retry_delay=timedelta(minutes=2),
@@ -89,11 +90,11 @@ def create_dag(dag_id, parameters):
     run_simulation = BashOperator(
         task_id='run_simulation',
         bash_command='docker run '
-                     '-v {{ FILESYSTEM }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}/binary_data:/simulation/binary_data '
-                     '-v {{ FILESYSTEM }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}/run_config:/simulation/run_config '
-                     '-v {{ FILESYSTEM }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}/run:/simulation/run '
+                     '-v {{ FILESYSTEM }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}_{{ threads }}/binary_data:/simulation/binary_data '
+                     '-v {{ FILESYSTEM }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}_{{ threads }}/run_config:/simulation/run_config '
+                     '-v {{ FILESYSTEM }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}_{{ threads }}/run:/simulation/run '
                      '--rm '
-                     '{{ docker }}_{{ model }}_{{ threads }} ',
+                     '{{ docker }}_mitgcm_{{ id }}_{{ threads }} ',
         on_failure_callback=report_failure,
         retries=2,
         retry_delay=timedelta(minutes=2),
@@ -103,7 +104,7 @@ def create_dag(dag_id, parameters):
     postprocess_simulation_output = BashOperator(
         task_id='postprocess_simulation_output',
         bash_command="cd {{ filesystem }}/git/{{ simulation_repo_name }};"
-                     "python src/postprocess.py -f {{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }} -d {{ docker }}",
+                     "python src/postprocess.py -f {{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}_{{ threads }} -d {{ docker }}",
         on_failure_callback=report_failure,
         dag=dag,
     )
@@ -114,41 +115,18 @@ def create_dag(dag_id, parameters):
         op_kwargs={"lake": parameters["simulation_id"],
                    "model": "mitgcm",
                    "bucket": "https://alplakes-eawag.s3.eu-central-1.amazonaws.com",
-                   "folder": "{{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}",
+                   "folder": "{{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}_{{ threads }}",
                    'AWS_ID': Variable.get("AWS_ACCESS_KEY_ID"),
                    'AWS_KEY': Variable.get("AWS_SECRET_ACCESS_KEY")},
         on_failure_callback=report_failure,
         dag=dag,
     )
 
-    events_simulation_output = BashOperator(
-        task_id='events_simulation_output',
-        bash_command="cd {{ filesystem }}/git/{{ simulation_repo_name }};"
-                     "python src/events.py -f {{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }} -d {{ docker }}",
-        on_failure_callback=report_failure,
-        dag=dag,
-    )
-
-    event_notifications = PythonOperator(
-        task_id='event_notifications',
-        python_callable=process_event_notifications,
-        op_kwargs={"lake": parameters["simulation_id"],
-                   "name": parameters["name"],
-                   "model": "mitgcm",
-                   "email_list": ["james.runnalls@eawag.ch", "damien.bouffard@eawag.ch", "anne.leroquais@eawag.ch"],
-                   "bucket": "https://alplakes-eawag.s3.eu-central-1.amazonaws.com",
-                   "folder": "{{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}",
-                   'AWS_ID': Variable.get("AWS_ACCESS_KEY_ID"),
-                   'AWS_KEY': Variable.get("AWS_SECRET_ACCESS_KEY")},
-        on_failure_callback=report_failure,
-        dag=dag,
-    )
-
-    send_results = BashOperator(
+    """send_results = BashOperator(
         task_id='send_results',
         bash_command="sshpass -p {{ API_PASSWORD }} scp -r "
                      "-o StrictHostKeyChecking=no "
-                     "{{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}/postprocess/* "
+                     "{{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}_{{ threads }}/postprocess/* "
                      "{{ api_user }}@{{ api_server }}:{{ api_server_folder }}",
         on_failure_callback=report_failure,
         dag=dag,
@@ -156,12 +134,12 @@ def create_dag(dag_id, parameters):
 
     remove_results = BashOperator(
         task_id='remove_results',
-        bash_command="rm -rf {{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}",
+        bash_command="rm -rf {{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}_{{ threads }}",
         on_failure_callback=report_failure,
         dag=dag,
     )
 
-    """cache_data = PythonOperator(
+    cache_data = PythonOperator(
         task_id='cache_data',
         python_callable=cache_simulation_data,
         op_kwargs={"lake": parameters["simulation_id"],
@@ -174,7 +152,7 @@ def create_dag(dag_id, parameters):
         dag=dag,
     )"""
 
-    prepare_simulation_files >> compile_simulation >> run_simulation >> postprocess_simulation_output >> upload_pickup_files >> events_simulation_output >> event_notifications >> send_results >> remove_results
+    prepare_simulation_files >> compile_simulation >> run_simulation >> postprocess_simulation_output >> upload_pickup_files
 
     return dag
 

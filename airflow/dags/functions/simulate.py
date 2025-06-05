@@ -57,8 +57,8 @@ def format_depth(number):
     return string
 
 
-def format_simulation_directory(docker):
-    folder = "{}_delft3dflow".format(docker)
+def format_simulation_directory(docker, model):
+    folder = "{}_{}".format(docker, model)
     return folder.replace("/", "_").replace(".", "").replace(":", "").replace("-", "")
 
 

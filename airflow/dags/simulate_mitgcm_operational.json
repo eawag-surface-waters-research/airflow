@@ -3,7 +3,7 @@
         "simulation_id": "geneva_1000",
         "name": "Lake Geneva",
         "schedule_interval": "0 9 * * *",
-        "cores": "5_2",
+        "threads": "5_2",
         "docker": "eawag/mitgcm:67z"
     }
 ]

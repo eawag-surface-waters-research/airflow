@@ -47,7 +47,7 @@ def create_dag(dag_id, parameters):
                              'FILESYSTEM': Variable.get("FILESYSTEM"),
                              'model': 'delft3d-flow/' + parameters["simulation_id"],
                              'docker': parameters["docker"],
-                             'simulation_folder_prefix': format_simulation_directory(parameters["docker"]),
+                             'simulation_folder_prefix': format_simulation_directory(parameters["docker"], "delft3dflow"),
                              'start': get_last_sunday,
                              'end': get_end_date,
                              'today': get_today,
