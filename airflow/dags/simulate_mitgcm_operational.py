@@ -8,7 +8,7 @@ from airflow.utils.dates import days_ago
 
 from functions.email import report_failure
 from functions.simulate import (get_last_sunday, get_end_date, get_today, get_restart, number_of_cores,
-                                cache_simulation_data, format_simulation_directory, process_event_notifications)
+                                cache_simulation_data, format_simulation_directory, process_event_notifications, upload_pickup)
 
 from airflow import DAG
 
@@ -63,7 +63,7 @@ def create_dag(dag_id, parameters):
                              'API_PASSWORD': Variable.get("API_PASSWORD"),
                              'api_server_folder': "/nfsmount/filesystem/media/simulations/mitgcm/results/{}".format(
                                  parameters["simulation_id"]),
-                             'number_of_cores': number_of_cores}
+                             'threads': number_of_cores}
     )
 
     prepare_simulation_files = BashOperator(
@@ -71,26 +71,29 @@ def create_dag(dag_id, parameters):
         bash_command="mkdir -p {{ filesystem }}/git;"
                      "cd {{ filesystem }}/git;"
                      "git clone {{ simulation_repo_https }} && cd {{ simulation_repo_name }} || cd {{ simulation_repo_name }} && git stash && git pull;"
-                     "python src/main.py -m {{ model }} -d {{ docker }} -t {{ today(ds) }} -s {{ start(ds) }} -e {{ end(ds) }} -a {{ api }}",
+                     "python src/main.py -m {{ model }} -d {{ docker }} -t {{ today(ds) }} -s {{ start(ds) }} -e {{ end(ds) }} -a {{ api }} -th {{ threads }}",
         on_failure_callback=report_failure,
+        dag=dag,
+    )
+
+    compile_simulation = BashOperator(
+        task_id='compile_simulation',
+        bash_command='cd {{ FILESYSTEM }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }};'
+                     'docker build -t {{ docker }}_{{ model }}_{{ threads }} .',
+        on_failure_callback=report_failure,
+        retries=2,
+        retry_delay=timedelta(minutes=2),
         dag=dag,
     )
 
     run_simulation = BashOperator(
         task_id='run_simulation',
         bash_command='docker run '
-                     '-e AWS_ID={{ params.AWS_ID }} '
-                     '-e AWS_KEY={{ params.AWS_KEY }} '
-                     '-v {{ FILESYSTEM }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}:/job '
+                     '-v {{ FILESYSTEM }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}/binary_data:/simulation/binary_data '
+                     '-v {{ FILESYSTEM }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}/run_config:/simulation/run_config '
+                     '-v {{ FILESYSTEM }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}/run:/simulation/run '
                      '--rm '
-                     '{{ docker }} '
-                     '-p {{ number_of_cores(task_instance, cores) }} '
-                     '-r "{{ params.restart }}{{ restart(ds) }}.000000"',
-        params={
-            'restart': 's3://alplakes-eawag/simulations/delft3d-flow/restart-files/{}/tri-rst.Simulation_Web_rst.'.format(
-                parameters["simulation_id"]),
-            'AWS_ID': Variable.get("AWS_ACCESS_KEY_ID"),
-            'AWS_KEY': Variable.get("AWS_SECRET_ACCESS_KEY")},
+                     '{{ docker }}_{{ model }}_{{ threads }} ',
         on_failure_callback=report_failure,
         retries=2,
         retry_delay=timedelta(minutes=2),
@@ -101,6 +104,19 @@ def create_dag(dag_id, parameters):
         task_id='postprocess_simulation_output',
         bash_command="cd {{ filesystem }}/git/{{ simulation_repo_name }};"
                      "python src/postprocess.py -f {{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }} -d {{ docker }}",
+        on_failure_callback=report_failure,
+        dag=dag,
+    )
+
+    upload_pickup_files = PythonOperator(
+        task_id='upload_pickup_files',
+        python_callable=upload_pickup,
+        op_kwargs={"lake": parameters["simulation_id"],
+                   "model": "mitgcm",
+                   "bucket": "https://alplakes-eawag.s3.eu-central-1.amazonaws.com",
+                   "folder": "{{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}",
+                   'AWS_ID': Variable.get("AWS_ACCESS_KEY_ID"),
+                   'AWS_KEY': Variable.get("AWS_SECRET_ACCESS_KEY")},
         on_failure_callback=report_failure,
         dag=dag,
     )
@@ -118,7 +134,7 @@ def create_dag(dag_id, parameters):
         python_callable=process_event_notifications,
         op_kwargs={"lake": parameters["simulation_id"],
                    "name": parameters["name"],
-                   "model": "delft3d-flow",
+                   "model": "mitgcm",
                    "email_list": ["james.runnalls@eawag.ch", "damien.bouffard@eawag.ch", "anne.leroquais@eawag.ch"],
                    "bucket": "https://alplakes-eawag.s3.eu-central-1.amazonaws.com",
                    "folder": "{{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}",
@@ -145,20 +161,20 @@ def create_dag(dag_id, parameters):
         dag=dag,
     )
 
-    cache_data = PythonOperator(
+    """cache_data = PythonOperator(
         task_id='cache_data',
         python_callable=cache_simulation_data,
         op_kwargs={"lake": parameters["simulation_id"],
-                   "model": "delft3d-flow",
+                   "model": "mitgcm",
                    "bucket": "https://alplakes-eawag.s3.eu-central-1.amazonaws.com",
                    "api": "https://alplakes-api.eawag.ch",
                    'AWS_ID': Variable.get("AWS_ACCESS_KEY_ID"),
                    'AWS_KEY': Variable.get("AWS_SECRET_ACCESS_KEY")},
         on_failure_callback=report_failure,
         dag=dag,
-    )
+    )"""
 
-    prepare_simulation_files >> run_simulation >> postprocess_simulation_output >> events_simulation_output >> event_notifications >> send_results >> remove_results >> cache_data
+    prepare_simulation_files >> compile_simulation >> run_simulation >> postprocess_simulation_output >> upload_pickup_files >> events_simulation_output >> event_notifications >> send_results >> remove_results
 
     return dag
 

@@ -4,6 +4,6 @@
         "name": "Lake Geneva",
         "schedule_interval": "0 9 * * *",
         "cores": "5_2",
-        "docker": "eawag/mitgcm:67z_geneva_100_5_2"
+        "docker": "eawag/mitgcm:67z"
     }
 ]

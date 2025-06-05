@@ -376,3 +376,25 @@ def upload_restart_files(ds, **kwargs):
             print("Cannot locate restart file: {}".format(path))
         s = s + relativedelta(days=7)
         i = i + 1
+
+
+def upload_pickup(ds, **kwargs):
+    folder = kwargs["folder"]
+    lake = kwargs["lake"]
+    model = kwargs["model"]
+    bucket = kwargs["bucket"]
+    aws_access_key_id = kwargs["AWS_ID"]
+    aws_secret_access_key = kwargs["AWS_KEY"]
+    bucket_key = bucket.split(".")[0].split("//")[1]
+
+    s3 = boto3.client("s3",
+                      aws_access_key_id=aws_access_key_id,
+                      aws_secret_access_key=aws_secret_access_key)
+
+    for file in os.listdir(os.path.join(folder, "run")):
+        if file.startswith("pickup"):
+            file_parts = file.split(".")
+            if len(file_parts) == 3 and file[0] == "pickup" and len(file[1]) == 8 and file[2] in ["meta", "data"]:
+                s3.upload_file(os.path.join(folder, "run", file), bucket_key, "simulations/{}/restart-files/{}/{}".format(model, lake, file))
+
+
