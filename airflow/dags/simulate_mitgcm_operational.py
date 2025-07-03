@@ -122,7 +122,7 @@ def create_dag(dag_id, parameters):
         dag=dag,
     )
 
-    """send_results = BashOperator(
+    send_results = BashOperator(
         task_id='send_results',
         bash_command="sshpass -p {{ API_PASSWORD }} scp -r "
                      "-o StrictHostKeyChecking=no "
@@ -139,7 +139,7 @@ def create_dag(dag_id, parameters):
         dag=dag,
     )
 
-    cache_data = PythonOperator(
+    """cache_data = PythonOperator(
         task_id='cache_data',
         python_callable=cache_simulation_data,
         op_kwargs={"lake": parameters["simulation_id"],
@@ -152,7 +152,7 @@ def create_dag(dag_id, parameters):
         dag=dag,
     )"""
 
-    prepare_simulation_files >> compile_simulation >> run_simulation >> postprocess_simulation_output >> upload_pickup_files
+    prepare_simulation_files >> compile_simulation >> run_simulation >> postprocess_simulation_output >> upload_pickup_files >> send_results >> remove_results
 
     return dag
 
