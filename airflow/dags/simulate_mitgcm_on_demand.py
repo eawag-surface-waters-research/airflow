@@ -86,7 +86,7 @@ prepare_simulation_files = BashOperator(
 compile_simulation = BashOperator(
         task_id='compile_simulation',
         bash_command='cd {{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ config_format_simulation_directory(dag_run.conf.docker)  }}_{{ dag_run.conf.lake }}_{{ dag_run.conf.start }}_{{ dag_run.conf.end }}_{{ dag_run.conf.threads }};'
-                     'docker build -t {{ dag_run.conf.docker }}_mitgcm_{{ dag_run.conf.lake }}_{{ threads }} .',
+                     'docker build -t {{ dag_run.conf.docker }}_mitgcm_{{ dag_run.conf.lake }}_{{ dag_run.conf.threads }} .',
         on_failure_callback=report_failure,
         retries=2,
         retry_delay=timedelta(minutes=2),
@@ -100,7 +100,7 @@ run_simulation = BashOperator(
                  '-v {{ FILESYSTEM }}/git/{{ simulation_repo_name }}/runs/{{ config_format_simulation_directory(dag_run.conf.docker)  }}_{{ dag_run.conf.lake }}_{{ dag_run.conf.start }}_{{ dag_run.conf.end }}_{{ dag_run.conf.threads }}/run_config:/simulation/run_config '
                  '-v {{ FILESYSTEM }}/git/{{ simulation_repo_name }}/runs/{{ config_format_simulation_directory(dag_run.conf.docker)  }}_{{ dag_run.conf.lake }}_{{ dag_run.conf.start }}_{{ dag_run.conf.end }}_{{ dag_run.conf.threads }}/run:/simulation/run '
                  '--rm '
-                 '{{ dag_run.conf.docker }}_mitgcm_{{ dag_run.conf.lake }}_{{ threads }} ',
+                 '{{ dag_run.conf.docker }}_mitgcm_{{ dag_run.conf.lake }}_{{ dag_run.conf.threads }} ',
     on_failure_callback=report_failure,
     retries=2,
     retry_delay=timedelta(minutes=2),
