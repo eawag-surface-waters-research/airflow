@@ -57,8 +57,8 @@ def format_depth(number):
     return string
 
 
-def format_simulation_directory(docker):
-    folder = "{}_delft3dflow".format(docker)
+def format_simulation_directory(docker, model):
+    folder = "{}_{}".format(docker, model)
     return folder.replace("/", "_").replace(".", "").replace(":", "").replace("-", "")
 
 
@@ -376,3 +376,29 @@ def upload_restart_files(ds, **kwargs):
             print("Cannot locate restart file: {}".format(path))
         s = s + relativedelta(days=7)
         i = i + 1
+
+
+def upload_pickup(ds, **kwargs):
+    folder = kwargs["folder"]
+    lake = kwargs["lake"]
+    model = kwargs["model"]
+    bucket = kwargs["bucket"]
+    aws_access_key_id = kwargs["AWS_ID"]
+    aws_secret_access_key = kwargs["AWS_KEY"]
+    bucket_key = bucket.split(".")[0].split("//")[1]
+
+    s3 = boto3.client("s3",
+                      aws_access_key_id=aws_access_key_id,
+                      aws_secret_access_key=aws_secret_access_key)
+
+    for file in os.listdir(os.path.join(folder, "run")):
+        if file.startswith("pickup"):
+            file_parts = file.split(".")
+            if (len(file_parts) == 3 and file_parts[0] == "pickup" and len(file_parts[1]) == 8 and
+                    file_parts[2] in ["meta", "data"]):
+                file_path = os.path.join(folder, "run", file)
+                if os.path.getsize(file_path) > 100:
+                    print("Uploading: {}".format(file))
+                    s3.upload_file(file_path, bucket_key, "simulations/{}/restart-files/{}/{}".format(model, lake, file))
+
+

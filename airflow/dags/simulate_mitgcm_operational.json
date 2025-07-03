@@ -1,0 +1,9 @@
+[
+    {
+        "simulation_id": "zurich",
+        "name": "Lake Zurich",
+        "schedule_interval": "0 9 * * *",
+        "threads": "5_2",
+        "docker": "eawag/mitgcm:67z"
+    }
+]

@@ -1,5 +1,5 @@
 import json
-from datetime import timedelta, datetime
+from datetime import timedelta
 
 from airflow.operators.bash import BashOperator
 from airflow.operators.python_operator import PythonOperator
@@ -7,8 +7,8 @@ from airflow.models import Variable
 from airflow.utils.dates import days_ago
 
 from functions.email import report_failure
-from functions.simulate import (get_last_sunday, get_end_date, get_today, get_restart, number_of_cores,
-                                cache_simulation_data, format_simulation_directory, process_event_notifications)
+from functions.simulate import (get_last_sunday, get_end_date, get_today, get_restart, cache_simulation_data,
+                                format_simulation_directory, process_event_notifications, upload_pickup)
 
 from airflow import DAG
 
@@ -39,31 +39,31 @@ def create_dag(dag_id, parameters):
     dag = DAG(
         dag_id,
         default_args=default_args,
-        description='Operational Delft3D-Flow simulation.',
+        description='Operational MitGCM simulation.',
         schedule_interval=parameters["schedule_interval"],
         catchup=False,
         tags=['simulation', 'operational'],
         user_defined_macros={'filesystem': '/opt/airflow/filesystem',
                              'FILESYSTEM': Variable.get("FILESYSTEM"),
-                             'model': 'delft3d-flow/' + parameters["simulation_id"],
+                             'model': 'mitgcm/' + parameters["simulation_id"],
                              'docker': parameters["docker"],
-                             'simulation_folder_prefix': format_simulation_directory(parameters["docker"], "delft3dflow"),
+                             'simulation_folder_prefix': format_simulation_directory(parameters["docker"], "mitgcm"),
                              'start': get_last_sunday,
                              'end': get_end_date,
                              'today': get_today,
                              'restart': get_restart,
                              'bucket': 'alplakes-eawag',
                              'api': "http://eaw-alplakes2:8000",
-                             'cores': parameters["cores"],
+                             'threads': parameters["threads"],
                              'id': parameters["simulation_id"],
                              'simulation_repo_name': "alplakes-simulations",
                              'simulation_repo_https': "https://github.com/eawag-surface-waters-research/alplakes-simulations.git",
                              'api_user': "alplakes",
                              'api_server': 'eaw-alplakes2',
                              'API_PASSWORD': Variable.get("API_PASSWORD"),
-                             'api_server_folder': "/nfsmount/filesystem/media/simulations/delft3d-flow/results/{}".format(
-                                 parameters["simulation_id"]),
-                             'number_of_cores': number_of_cores}
+                             'api_server_folder': "/nfsmount/filesystem/media/simulations/mitgcm/results/{}".format(
+                                 parameters["simulation_id"])
+                             }
     )
 
     prepare_simulation_files = BashOperator(
@@ -71,26 +71,30 @@ def create_dag(dag_id, parameters):
         bash_command="mkdir -p {{ filesystem }}/git;"
                      "cd {{ filesystem }}/git;"
                      "git clone {{ simulation_repo_https }} && cd {{ simulation_repo_name }} || cd {{ simulation_repo_name }} && git stash && git pull;"
-                     "python src/main.py -m {{ model }} -d {{ docker }} -t {{ today(ds) }} -s {{ start(ds) }} -e {{ end(ds) }} -a {{ api }}",
+                     "python src/main.py -m {{ model }} -d {{ docker }} -t {{ today(ds) }} -s {{ start(ds) }} -e {{ end(ds) }} -a {{ api }} -th {{ threads }};"
+                     "chmod -R 777 runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}_{{ threads }}",
         on_failure_callback=report_failure,
+        dag=dag,
+    )
+
+    compile_simulation = BashOperator(
+        task_id='compile_simulation',
+        bash_command='cd {{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}_{{ threads }};'
+                     'docker build -t {{ docker }}_mitgcm_{{ id }}_{{ threads }} .',
+        on_failure_callback=report_failure,
+        retries=2,
+        retry_delay=timedelta(minutes=2),
         dag=dag,
     )
 
     run_simulation = BashOperator(
         task_id='run_simulation',
         bash_command='docker run '
-                     '-e AWS_ID={{ params.AWS_ID }} '
-                     '-e AWS_KEY={{ params.AWS_KEY }} '
-                     '-v {{ FILESYSTEM }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}:/job '
+                     '-v {{ FILESYSTEM }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}_{{ threads }}/binary_data:/simulation/binary_data '
+                     '-v {{ FILESYSTEM }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}_{{ threads }}/run_config:/simulation/run_config '
+                     '-v {{ FILESYSTEM }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}_{{ threads }}/run:/simulation/run '
                      '--rm '
-                     '{{ docker }} '
-                     '-p {{ number_of_cores(task_instance, cores) }} '
-                     '-r "{{ params.restart }}{{ restart(ds) }}.000000"',
-        params={
-            'restart': 's3://alplakes-eawag/simulations/delft3d-flow/restart-files/{}/tri-rst.Simulation_Web_rst.'.format(
-                parameters["simulation_id"]),
-            'AWS_ID': Variable.get("AWS_ACCESS_KEY_ID"),
-            'AWS_KEY': Variable.get("AWS_SECRET_ACCESS_KEY")},
+                     '{{ docker }}_mitgcm_{{ id }}_{{ threads }} ',
         on_failure_callback=report_failure,
         retries=2,
         retry_delay=timedelta(minutes=2),
@@ -100,28 +104,18 @@ def create_dag(dag_id, parameters):
     postprocess_simulation_output = BashOperator(
         task_id='postprocess_simulation_output',
         bash_command="cd {{ filesystem }}/git/{{ simulation_repo_name }};"
-                     "python src/postprocess.py -f {{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }} -d {{ docker }}",
+                     "python src/postprocess.py -f {{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}_{{ threads }} -d {{ docker }}",
         on_failure_callback=report_failure,
         dag=dag,
     )
 
-    events_simulation_output = BashOperator(
-        task_id='events_simulation_output',
-        bash_command="cd {{ filesystem }}/git/{{ simulation_repo_name }};"
-                     "python src/events.py -f {{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }} -d {{ docker }}",
-        on_failure_callback=report_failure,
-        dag=dag,
-    )
-
-    event_notifications = PythonOperator(
-        task_id='event_notifications',
-        python_callable=process_event_notifications,
+    upload_pickup_files = PythonOperator(
+        task_id='upload_pickup_files',
+        python_callable=upload_pickup,
         op_kwargs={"lake": parameters["simulation_id"],
-                   "name": parameters["name"],
-                   "model": "delft3d-flow",
-                   "email_list": ["james.runnalls@eawag.ch", "damien.bouffard@eawag.ch", "anne.leroquais@eawag.ch"],
+                   "model": "mitgcm",
                    "bucket": "https://alplakes-eawag.s3.eu-central-1.amazonaws.com",
-                   "folder": "{{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}",
+                   "folder": "{{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}_{{ threads }}",
                    'AWS_ID': Variable.get("AWS_ACCESS_KEY_ID"),
                    'AWS_KEY': Variable.get("AWS_SECRET_ACCESS_KEY")},
         on_failure_callback=report_failure,
@@ -132,7 +126,7 @@ def create_dag(dag_id, parameters):
         task_id='send_results',
         bash_command="sshpass -p {{ API_PASSWORD }} scp -r "
                      "-o StrictHostKeyChecking=no "
-                     "{{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}/postprocess/* "
+                     "{{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}_{{ threads }}/postprocess/* "
                      "{{ api_user }}@{{ api_server }}:{{ api_server_folder }}",
         on_failure_callback=report_failure,
         dag=dag,
@@ -140,32 +134,32 @@ def create_dag(dag_id, parameters):
 
     remove_results = BashOperator(
         task_id='remove_results',
-        bash_command="rm -rf {{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}",
+        bash_command="rm -rf {{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ simulation_folder_prefix }}_{{ id }}_{{ start(ds) }}_{{ end(ds) }}_{{ threads }}",
         on_failure_callback=report_failure,
         dag=dag,
     )
 
-    cache_data = PythonOperator(
+    """cache_data = PythonOperator(
         task_id='cache_data',
         python_callable=cache_simulation_data,
         op_kwargs={"lake": parameters["simulation_id"],
-                   "model": "delft3d-flow",
+                   "model": "mitgcm",
                    "bucket": "https://alplakes-eawag.s3.eu-central-1.amazonaws.com",
                    "api": "https://alplakes-api.eawag.ch",
                    'AWS_ID': Variable.get("AWS_ACCESS_KEY_ID"),
                    'AWS_KEY': Variable.get("AWS_SECRET_ACCESS_KEY")},
         on_failure_callback=report_failure,
         dag=dag,
-    )
+    )"""
 
-    prepare_simulation_files >> run_simulation >> postprocess_simulation_output >> events_simulation_output >> event_notifications >> send_results >> remove_results >> cache_data
+    prepare_simulation_files >> compile_simulation >> run_simulation >> postprocess_simulation_output >> upload_pickup_files >> send_results >> remove_results
 
     return dag
 
 
-with open('dags/simulate_delft3dflow_operational.json') as f:
+with open('dags/simulate_mitgcm_operational.json') as f:
     simulations = json.load(f)
 
 for simulation in simulations:
-    dag_id = "simulate_delft3dflow_operational_" + simulation["simulation_id"]
+    dag_id = "simulate_mitgcm_operational_" + simulation["simulation_id"]
     globals()[dag_id] = create_dag(dag_id, simulation)
