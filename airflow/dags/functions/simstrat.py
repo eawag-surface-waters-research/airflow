@@ -238,9 +238,10 @@ def cache_simstrat_operational_data(ds, **kwargs):
                 print("Failed to retrieve simulations", url)
 
         # DOY current year
+        yesterday = (datetime.now() - timedelta(days=1)).replace(hour=22, minute=0, second=0, microsecond=0)
         url = "{}/simulations/1d/point/simstrat/{}/{}/{}/{}?resample=daily&variables={}".format(api, lake["name"],
                                                                                     start_year.strftime("%Y%m%d%H%M"),
-                                                                                    end.strftime("%Y%m%d%H%M"), depth, parameter)
+                                                                                    yesterday.strftime("%Y%m%d%H%M"), depth, parameter)
         response = requests.get(url)
         if response.status_code == 200:
             data = response.json()
