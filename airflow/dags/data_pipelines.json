@@ -90,5 +90,34 @@
         "credential_id": "murten_mooring",
         "credential_keys": ["ftp", "user", "password"],
         "email": ["james.runnalls@eawag.ch"]
+    },
+    {
+        "id": "hallwil_mooring",
+        "docker_id": "hallwil_mooring",
+        "repo_https": "https://gitlab.renkulab.io/eawag-surf/lake-hallwil-mooring.git",
+        "repo_name": "lake-hallwil-mooring",
+        "datalakes": [
+            {"id":  1046, "failure_notification": 6}
+        ],
+        "schedule_interval": "5,35 * * * *",
+        "credential_id": "hallwil_mooring",
+        "credential_keys": ["ftp", "user", "password"],
+        "email": ["james.runnalls@eawag.ch"]
+    },
+    {
+        "id": "aegeri_mooring",
+        "docker_id": "aegeri_mooring",
+        "repo_https": "https://gitlab.renkulab.io/eawag-surf/lake-aegeri-mooring.git",
+        "repo_name": "lake-aegeri-mooring",
+        "datalakes": [
+            {"id":  1073, "failure_notification": 6},
+            {"id":  1074, "failure_notification": 6},
+            {"id":  1075, "failure_notification": 6},
+            {"id":  1077, "failure_notification": 6}
+        ],
+        "schedule_interval": "6 * * * *",
+        "credential_id": "aegeri_mooring",
+        "credential_keys": ["ftp", "user", "password"],
+        "email": ["james.runnalls@eawag.ch"]
     }
 ]
