@@ -15,7 +15,7 @@ from functions.general import download_datalakes_data, calculate_rmse, download_
 
 
 def get_last_sunday(dt):
-    today = datetime.strptime(dt, "%Y-%m-%d") + timedelta(days=1)
+    today = datetime.strptime(dt, "%Y-%m-%d") - timedelta(days=1)
     bd = today + relativedelta(weekday=SU(-1))
     return bd.strftime('%Y%m%d')
 
