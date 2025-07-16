@@ -146,5 +146,20 @@
         "credential_id": "aegeri_mooring",
         "credential_keys": ["ftp", "user", "password"],
         "email": ["james.runnalls@eawag.ch"]
+    },
+    {
+        "id": "bianco_mooring",
+        "docker_id": "bianco_mooring",
+        "repo_https": "https://gitlab.renkulab.io/eawag-surf/lago-bianco-mooring.git",
+        "repo_name": "lago-bianco-mooring",
+        "datalakes": [
+            {"id":  1352, "failure_notification": 6},
+            {"id":  1353, "failure_notification": 6},
+            {"id":  1354, "failure_notification": 6}
+        ],
+        "schedule_interval": "10 * * * *",
+        "credential_id": "bianco_mooring",
+        "credential_keys": ["ftp", "user", "password"],
+        "email": ["james.runnalls@eawag.ch"]
     }
 ]
