@@ -79,6 +79,19 @@
         "email": ["james.runnalls@eawag.ch"]
     },
     {
+        "id": "greifensee_meteo",
+        "docker_id": "greifensee_meteo",
+        "repo_https": "https://gitlab.renkulab.io/eawag-surf/lake-greifen-meteostation.git",
+        "repo_name": "lake-greifen-meteostation",
+        "datalakes": [
+            {"id":  932, "failure_notification": 6}
+        ],
+        "schedule_interval": "45 * * * *",
+        "credential_id": "greifensee_meteo",
+        "credential_keys": ["host", "user", "password", "db"],
+        "email": ["james.runnalls@eawag.ch"]
+    },
+    {
         "id": "ticino_moorings",
         "docker_id": "ticino_moorings",
         "repo_https": "https://gitlab.renkulab.io/eawag-surf/ticino-monitoring-buoys.git",
