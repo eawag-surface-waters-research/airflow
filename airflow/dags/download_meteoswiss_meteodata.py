@@ -34,7 +34,7 @@ dag = DAG(
     'download_meteoswiss_meteodata',
     default_args=default_args,
     description='Download Meteodata from MeteoSwiss.',
-    schedule_interval="0 11 * * *",
+    schedule_interval="30 8 * * *",
     catchup=False,
     tags=['api', 'operational'],
 )
