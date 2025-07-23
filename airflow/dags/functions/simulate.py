@@ -11,7 +11,7 @@ from datetime import datetime, timedelta, timezone
 from dateutil.relativedelta import relativedelta, SU
 from airflow.utils.email import send_email
 from jinja2 import Template
-from functions.general import download_datalakes_data, calculate_rmse, download_zurich_police_data
+from functions.general import download_datalakes_data, calculate_rmse, download_zurich_police_data, cache_performance
 
 
 def get_last_sunday(dt):
@@ -129,6 +129,12 @@ def cache_simulation_data(ds, **kwargs):
         print("Failed to collect custom depth, using default of {}".format(default_depth))
 
     # Performance
+    try:
+        result = cache_performance(model, lake, s3, bucket=bucket, branch=branch, api=api)
+        #if result:
+        #    lake_metadata["rmse"] = result
+    except Exception as e:
+        print(e)
     try:
         response = requests.get("{}/static/website/metadata/{}/performance.json".format(bucket, branch))
         performance_info = response.json()

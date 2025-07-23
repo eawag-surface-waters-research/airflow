@@ -1,3 +1,6 @@
+import math
+import json
+import tempfile
 import requests
 import numpy as np
 import pandas as pd
@@ -107,6 +110,108 @@ def download_zurich_police_data(station, start, stop):
             pass
 
     return {"time": time, "values": values}
+
+
+def download_insitu_data(station, start, stop):
+    response = requests.get("https://alplakes-internal-api.eawag.ch/insitu/temperature/measured/{}/{}/{}".format(station, start.strftime('%Y%m%d'), stop.strftime('%Y%m%d')))
+    if response.status_code != 200:
+        raise ValueError("Failed to get insitu data")
+    data = response.json()
+    return {"time": data["time"], "values": data["variable"]["data"]}
+
+
+def download_3d_model_data(api, model_type, model_id, depth, lat, lng, start, stop):
+    response = requests.get(
+        "{}/simulations/point/{}/{}/{}/{}/{}/{}/{}?variables=temperature"
+        .format(api, model_type, model_id, start.strftime("%Y%m%d2300"), stop.strftime("%Y%m%d2300"),
+                depth, lat, lng))
+    if response.status_code != 200:
+        raise ValueError("Failed to get model values")
+    data = response.json()
+    return {"time": data["time"], "values": data["variables"]["temperature"]["data"]}
+
+
+def download_1d_model_data(api, model_type, model_id, depth, start, stop):
+    response = requests.get("{}/simulations/1d/point/{}/{}/{}/{}/{}?variables=T".format(api, model_type, model_id, start.strftime("%Y%m%d2300"), stop.strftime("%Y%m%d2300"), depth))
+    if response.status_code != 200:
+        raise ValueError("Failed to get model values")
+    data = response.json()
+    return {"time": data["time"], "values": data["variables"]["T"]["data"]}
+
+
+def cache_performance(model_type, model_id, s3, bucket="https://alplakes-eawag.s3.eu-central-1.amazonaws.com",
+                      branch="master", api="https://alplakes-api.eawag.ch"):
+    response = requests.get("{}/static/website/metadata/{}/performance2.json".format(bucket, branch))
+    p = response.json()
+    bucket_key = bucket.split(".")[0].split("//")[1]
+    stop = datetime.now() - timedelta(days=1)
+    stop = stop.replace(hour=23, minute=0, second=0, microsecond=0)
+    start = stop - timedelta(days=10)
+
+    for lake, lake_sensors in p.items():
+        matching_sensors = [
+            sensor for sensor in lake_sensors
+            if any(model["type"] == model_type and model["id"] == model_id for model in sensor["models"])
+        ]
+        if matching_sensors:
+            break
+
+    if len(matching_sensors) == 0:
+        return False
+
+    rmse_total = []
+
+    for sensor in matching_sensors:
+        for depth in sensor["depth"]:
+            try:
+                if sensor["type"] == "datalakes":
+                    depth["data"] = download_datalakes_data(sensor["id"], depth["depth"], start, stop)
+                elif sensor["type"] == "lake-scrape":
+                    depth["data"] = download_insitu_data(sensor["id"], start, stop)
+                else:
+                    raise ValueError("Unrecognised data source")
+                days = (datetime.fromisoformat(depth["data"]["time"][-1]) - datetime.fromisoformat(
+                    depth["data"]["time"][0])).days
+                if days < 5:
+                    print("Insitu data doesnt cover a period of at least 5 days")
+                    depth["data"] = False
+                    continue
+                for model in sensor["models"]:
+                    if "data" not in model:
+                        model["data"] = {}
+                    model["data"][depth["name"]] = {}
+                    try:
+                        if model["type"] in ["mitgcm", "delft3d-flow"]:
+                            model["data"][depth["name"]]["data"] = download_3d_model_data(api, model["type"],
+                                                                                          model["id"], depth["depth"],
+                                                                                          sensor["lat"], sensor["lng"],
+                                                                                          start, stop)
+                        elif model["type"] in ["simstrat"]:
+                            model["data"][depth["name"]]["data"] = download_1d_model_data(api, model["type"],
+                                                                                          model["id"], depth["depth"],
+                                                                                          start, stop)
+                        else:
+                            print("Unrecognised model")
+                            continue
+                    except Exception as e:
+                        print("Failed for model {}".format(model["type"]))
+                        print(e)
+                    rmse = calculate_rmse(model["data"][depth["name"]]["data"], depth["data"])
+                    if isinstance(rmse, float) and not math.isnan(rmse):
+                        model["data"][depth["name"]]["rmse"] = round(rmse, 2)
+                        if model["type"] == model_type and model["id"] == model_id:
+                            rmse_total.append(rmse)
+            except Exception as e:
+                print("Failed for sensor {}".format(sensor["name"]))
+                print(e)
+    if len(rmse_total) > 0:
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
+            temp_filename = temp_file.name
+            json.dump(matching_sensors, temp_file)
+        s3.upload_file(temp_filename, bucket_key, "performance/{}.json".format(lake))
+        return round(sum(rmse_total) / len(rmse_total), 1)
+    else:
+        return False
 
 
 def calculate_rmse(dataset1, dataset2):

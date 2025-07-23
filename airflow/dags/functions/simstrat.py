@@ -9,7 +9,7 @@ import requests
 import tempfile
 import numpy as np
 from datetime import datetime, timedelta, timezone
-from functions.general import download_datalakes_data, calculate_rmse
+from functions.general import download_datalakes_data, calculate_rmse, cache_performance
 
 
 def iso_to_unix(input_time):
@@ -132,6 +132,12 @@ def cache_simstrat_operational_data(ds, **kwargs):
 
     for lake in lakes:
         # Performance
+        try:
+            result = cache_performance("simstrat", lake, s3, bucket=bucket, branch=branch, api=api)
+            # if result:
+            #    lake_metadata["rmse"] = result
+        except Exception as e:
+            print(e)
         try:
             if "simstrat" in performance_info and lake["name"] in performance_info["simstrat"]:
                 live = performance_info["simstrat"][lake["name"]].copy()
