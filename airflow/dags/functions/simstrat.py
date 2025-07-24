@@ -133,7 +133,7 @@ def cache_simstrat_operational_data(ds, **kwargs):
     for lake in lakes:
         # Performance
         try:
-            result = cache_performance("simstrat", lake, s3, bucket=bucket, branch=branch, api=api)
+            result = cache_performance("simstrat", lake["name"], s3, bucket=bucket, branch=branch, api=api)
             # if result:
             #    lake_metadata["rmse"] = result
         except Exception as e:

@@ -156,7 +156,7 @@ def cache_performance(model_type, model_id, s3, bucket="https://alplakes-eawag.s
         if matching_sensors:
             break
 
-    print(lake, matching_sensors)
+    print(lake, matching_sensors, model_type, model_id)
 
     if len(matching_sensors) == 0:
         return False
