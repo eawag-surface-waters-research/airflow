@@ -131,56 +131,10 @@ def cache_simulation_data(ds, **kwargs):
     # Performance
     try:
         result = cache_performance(model, lake, s3, bucket=bucket, branch=branch, api=api)
-        #if result:
-        #    lake_metadata["rmse"] = result
+        if result:
+            lake_metadata["rmse"] = result
     except Exception as e:
         print(e)
-    try:
-        response = requests.get("{}/static/website/metadata/{}/performance.json".format(bucket, branch))
-        performance_info = response.json()
-        if model in performance_info and lake in performance_info[model]:
-            live = performance_info[model][lake].copy()
-            stop = datetime.now() - timedelta(days=1)
-            stop = stop.replace(hour=23, minute=0, second=0, microsecond=0)
-            start = stop - timedelta(days=10)
-            rmse_total = []
-            for location in live:
-                for depth in live[location]["depth"]:
-                    try:
-                        if live[location]["type"] == "datalakes":
-                            live[location]["depth"][depth]["insitu"] = (
-                                download_datalakes_data(live[location]["id"], live[location]["depth"][depth]["depth"], start, stop))
-                        elif live[location]["type"] == "zurich_police":
-                            live[location]["depth"][depth]["insitu"] = (
-                                download_zurich_police_data(live[location]["id"], start, stop))
-                        else:
-                            raise ValueError("Unrecognised data source")
-                        response = requests.get(
-                            "{}/simulations/point/{}/{}/{}/{}/{}/{}/{}?variables=temperature"
-                            .format(api, model, lake, start.strftime("%Y%m%d2300"), stop.strftime("%Y%m%d2300"),
-                                    live[location]["depth"][depth]["depth"], live[location]["lat"], live[location]["lng"]))
-                        if response.status_code != 200:
-                            raise ValueError("Failed to get model values")
-                        out = response.json()
-                        live[location]["depth"][depth]["model"] = {"time": out["time"],
-                                                                   "values": out["variables"]["temperature"]["data"]}
-                        rmse = calculate_rmse(live[location]["depth"][depth]["model"],
-                                              live[location]["depth"][depth]["insitu"])
-                        if isinstance(rmse, float) and not math.isnan(rmse):
-                            rmse_total.append(rmse)
-                            live[location]["depth"][depth]["rmse"] = round(rmse, 1)
-                    except Exception as e:
-                        print(e)
-                        print("Failed to collect insitu")
-            if len(rmse_total) > 0:
-                lake_metadata["rmse"] = round(rmse_total[0], 1)
-                with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
-                    temp_filename = temp_file.name
-                    json.dump(live, temp_file)
-                s3.upload_file(temp_filename, bucket_key,
-                               "simulations/{}/cache/{}/performance.json".format(model, lake))
-    except:
-        print("Live performance failed")
 
     # Cache lake page files
     max_date = datetime.strptime(lake_metadata["end_date"] + " 21:00", '%Y-%m-%d %H:%M').replace(tzinfo=timezone.utc)
