@@ -134,50 +134,11 @@ def cache_simstrat_operational_data(ds, **kwargs):
         # Performance
         try:
             result = cache_performance("simstrat", lake["name"], s3, bucket=bucket, branch=branch, api=api)
-            # if result:
-            #    lake_metadata["rmse"] = result
+            if result:
+                lake["rmse"] = result
         except Exception as e:
-            print(e)
-        try:
-            if "simstrat" in performance_info and lake["name"] in performance_info["simstrat"]:
-                live = performance_info["simstrat"][lake["name"]].copy()
-                stop = datetime.now() - timedelta(days=1)
-                stop = stop.replace(hour=23, minute=0, second=0, microsecond=0)
-                start = stop - timedelta(days=10)
-                rmse_total = []
-                for location in live:
-                    for depth in live[location]["depth"]:
-                        try:
-                            if live[location]["type"] == "datalakes":
-                                live[location]["depth"][depth]["insitu"] = (
-                                    download_datalakes_data(live[location]["id"],live[location]["depth"][depth]["depth"], start, stop))
-                            else:
-                                raise ValueError("Unrecognised data source")
-
-                            response = requests.get(
-                                "{}/simulations/1d/point/simstrat/{}/{}/{}/{}?variables=T"
-                                .format(api, lake["name"], start.strftime("%Y%m%d2300"), stop.strftime("%Y%m%d2300"), live[location]["depth"][depth]["depth"]))
-                            if response.status_code != 200:
-                                raise ValueError("Failed to get model values")
-                            out = response.json()
-                            live[location]["depth"][depth]["model"] = {"time": out["time"],
-                                                                       "values": out["variables"]["T"]["data"]}
-                            rmse = calculate_rmse(live[location]["depth"][depth]["model"],
-                                                  live[location]["depth"][depth]["insitu"])
-                            if isinstance(rmse, float) and not math.isnan(rmse):
-                                rmse_total.append(rmse)
-                                live[location]["depth"][depth]["rmse"] = round(rmse, 1)
-                        except:
-                            print("Failed to collect insitu")
-                if len(rmse_total) > 0:
-                    lake["rmse"] = round(rmse_total[0], 1)
-                    with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
-                        temp_filename = temp_file.name
-                        json.dump(live, temp_file)
-                    s3.upload_file(temp_filename, bucket_key,
-                                   "simulations/simstrat/cache/{}/performance.json".format(lake["name"]))
-        except:
             print("Failed to add performance for {}".format(lake["name"]))
+            print(e)
 
         # Metadata
         with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
