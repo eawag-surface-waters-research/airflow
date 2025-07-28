@@ -39,6 +39,20 @@
         "email": ["james.runnalls@eawag.ch"]
     },
     {
+        "id": "lexplore_idronaut",
+        "docker_id": "lexplore_idronaut",
+        "repo_https": "https://gitlab.renkulab.io/lexplore/idronaut-automatic-profiler.git",
+        "repo_name": "idronaut-automatic-profiler",
+        "datalakes": [
+            {"id":  666, "failure_notification": 12},
+            {"id":  667, "failure_notification": 12}
+        ],
+        "schedule_interval": "55 * * * *",
+        "credential_id": "lexplore",
+        "credential_keys": ["ftp", "user", "password"],
+        "email": ["james.runnalls@eawag.ch"]
+    },
+    {
         "id": "buchillon",
         "docker_id": "buchillon",
         "repo_https": "https://gitlab.renkulab.io/lexplore/buchillon.git",
