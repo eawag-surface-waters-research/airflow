@@ -32,7 +32,7 @@ dag = DAG(
     'current_water_level',
     default_args=default_args,
     description='Collect current water level values',
-    schedule_interval='*/20 * * * *',
+    schedule_interval='5,25,45 * * * *',
     catchup=False,
     tags=['insitu', 'monitoring'],
 )

@@ -32,7 +32,7 @@ dag = DAG(
     'current_water_temperature',
     default_args=default_args,
     description='Collect current water temperature values',
-    schedule_interval='*/20 * * * *',
+    schedule_interval='0,20,40 * * * *',
     catchup=False,
     tags=['insitu', 'monitoring'],
 )
