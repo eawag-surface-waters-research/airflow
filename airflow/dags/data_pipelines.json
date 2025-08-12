@@ -179,5 +179,18 @@
         "credential_id": "bianco_mooring",
         "credential_keys": ["ftp", "user", "password"],
         "email": ["james.runnalls@eawag.ch"]
-    }
+    },
+    {
+          "id": "aquascope",
+          "docker_id": "aquascope",
+          "repo_https": "https://gitlab.eawag.ch/surf/data-pipelines/aquascope.git",
+          "repo_name": "aquascope",
+          "datalakes": [
+              {"id":  1387, "failure_notification": 6}
+          ],
+          "schedule_interval": "2 * * * *",
+          "credential_id": "aquascope",
+          "credential_keys": ["ftp", "user", "password"],
+          "email": ["james.runnalls@eawag.ch"]
+      }
 ]
