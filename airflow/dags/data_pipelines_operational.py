@@ -80,6 +80,7 @@ def create_dag(dag_id, parameters):
         default_args=default_args,
         description='Operational data pipeline.',
         schedule_interval=None if not parameters["schedule_interval"] else parameters["schedule_interval"],
+        max_active_runs=1,
         catchup=False,
         tags=['data pipeline', 'operational'],
         user_defined_macros={'filesystem': '/opt/airflow/filesystem',
