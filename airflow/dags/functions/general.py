@@ -113,7 +113,8 @@ def download_zurich_police_data(station, start, stop):
 
 
 def download_insitu_data(station, start, stop):
-    response = requests.get("https://alplakes-internal-api.eawag.ch/insitu/temperature/measured/{}/{}/{}".format(station, start.strftime('%Y%m%d'), stop.strftime('%Y%m%d')))
+    begin = start + timedelta(days=1)
+    response = requests.get("https://alplakes-internal-api.eawag.ch/insitu/temperature/measured/{}/{}/{}".format(station, begin.strftime('%Y%m%d'), stop.strftime('%Y%m%d')))
     if response.status_code != 200:
         raise ValueError("Failed to get insitu data")
     data = response.json()
