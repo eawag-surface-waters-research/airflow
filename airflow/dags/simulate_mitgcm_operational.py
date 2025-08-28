@@ -139,7 +139,7 @@ def create_dag(dag_id, parameters):
         dag=dag,
     )
 
-    """cache_data = PythonOperator(
+    cache_data = PythonOperator(
         task_id='cache_data',
         python_callable=cache_simulation_data,
         op_kwargs={"lake": parameters["simulation_id"],
@@ -150,9 +150,9 @@ def create_dag(dag_id, parameters):
                    'AWS_KEY': Variable.get("AWS_SECRET_ACCESS_KEY")},
         on_failure_callback=report_failure,
         dag=dag,
-    )"""
+    )
 
-    prepare_simulation_files >> compile_simulation >> run_simulation >> postprocess_simulation_output >> upload_pickup_files >> send_results >> remove_results
+    prepare_simulation_files >> compile_simulation >> run_simulation >> postprocess_simulation_output >> upload_pickup_files >> send_results >> remove_results >> cache_data
 
     return dag
 
