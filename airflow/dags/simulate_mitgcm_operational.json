@@ -5,5 +5,12 @@
         "schedule_interval": "0 9 * * *",
         "threads": "5_2",
         "docker": "eawag/mitgcm:67z"
-    }
+    },
+    {
+          "simulation_id": "zug",
+          "name": "Lake Zug",
+          "schedule_interval": "2 9 * * *",
+          "threads": "2_5",
+          "docker": "eawag/mitgcm:67z"
+      }
 ]
