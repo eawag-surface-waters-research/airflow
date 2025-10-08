@@ -2,8 +2,8 @@
     {
         "id": "lexplore_meteostation",
         "docker_id": "lexplore_meteostation",
-        "repo_https": "https://gitlab.renkulab.io/lexplore/meteostation.git",
-        "repo_name": "meteostation",
+        "repo_https": "https://github.com/LeXPLORE-Platform/Meteostation.git",
+        "repo_name": "Meteostation",
         "datalakes": [
             {"id":  459, "failure_notification": 3}
         ],
