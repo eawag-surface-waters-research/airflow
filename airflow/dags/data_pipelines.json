@@ -140,7 +140,7 @@
     {
         "id": "murten_mooring",
         "docker_id": "murten_mooring",
-        "repo_https": "https://gitlab.renkulab.io/eawag-surf/lake-murten-mooring.git",
+        "repo_https": "https://gitlab.eawag.ch/surf/data-pipelines/lake-murten-mooring.git",
         "repo_name": "lake-murten-mooring",
         "datalakes": [
             {"id":  956, "failure_notification": 6}
