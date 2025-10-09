@@ -166,7 +166,7 @@
     {
         "id": "aegeri_mooring",
         "docker_id": "aegeri_mooring",
-        "repo_https": "https://gitlab.renkulab.io/eawag-surf/lake-aegeri-mooring.git",
+        "repo_https": "https://gitlab.eawag.ch/surf/data-pipelines/lake-aegeri-mooring.git",
         "repo_name": "lake-aegeri-mooring",
         "datalakes": [
             {"id":  1073, "failure_notification": 6},
