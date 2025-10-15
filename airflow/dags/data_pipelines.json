@@ -67,6 +67,19 @@
         "email": ["james.runnalls@eawag.ch"]
     },
     {
+        "id": "lexplore_skin_temperature",
+        "docker_id": "lexplore_skin_temperature",
+        "repo_https": "https://github.com/LeXPLORE-Platform/skin-temperature.git",
+        "repo_name": "skin-temperature",
+        "datalakes": [
+            {"id":  854, "failure_notification": 12}
+        ],
+        "schedule_interval": "6 * * * *",
+        "credential_id": "lexplore",
+        "credential_keys": ["ftp", "user", "password"],
+        "email": ["james.runnalls@eawag.ch"]
+    },
+    {
         "id": "buchillon",
         "docker_id": "buchillon",
         "repo_https": "https://gitlab.renkulab.io/lexplore/buchillon.git",
