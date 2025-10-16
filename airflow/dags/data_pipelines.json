@@ -179,7 +179,7 @@
     {
         "id": "hallwil_mooring",
         "docker_id": "hallwil_mooring",
-        "repo_https": "https://gitlab.renkulab.io/eawag-surf/lake-hallwil-mooring.git",
+        "repo_https": "https://gitlab.eawag.ch/surf/data-pipelines/lake-hallwil-mooring.git",
         "repo_name": "lake-hallwil-mooring",
         "datalakes": [
             {"id":  1046, "failure_notification": 6}
