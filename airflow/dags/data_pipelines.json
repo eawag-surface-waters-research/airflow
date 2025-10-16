@@ -208,7 +208,7 @@
     {
         "id": "bianco_mooring",
         "docker_id": "bianco_mooring",
-        "repo_https": "https://gitlab.renkulab.io/eawag-surf/lago-bianco-mooring.git",
+        "repo_https": "https://gitlab.eawag.ch/surf/data-pipelines/lago-bianco-mooring.git",
         "repo_name": "lago-bianco-mooring",
         "datalakes": [
             {"id":  1352, "failure_notification": 6},
