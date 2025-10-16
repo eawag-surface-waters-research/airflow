@@ -148,7 +148,7 @@
     {
         "id": "ticino_moorings",
         "docker_id": "ticino_moorings",
-        "repo_https": "https://gitlab.renkulab.io/eawag-surf/ticino-monitoring-buoys.git",
+        "repo_https": "https://gitlab.eawag.ch/surf/data-pipelines/ticino-monitoring-buoys.git",
         "repo_name": "ticino-monitoring-buoys",
         "datalakes": [
             {"id":  1333, "failure_notification": 6},
