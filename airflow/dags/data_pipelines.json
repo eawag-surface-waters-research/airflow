@@ -108,7 +108,7 @@
     {
         "id": "greifensee_profiler",
         "docker_id": "greifensee_profiler",
-        "repo_https": "https://gitlab.renkulab.io/eawag-surf/lake-greifen-profiles.git",
+        "repo_https": "https://gitlab.eawag.ch/surf/data-pipelines/lake-greifen-profiles.git",
         "repo_name": "lake-greifen-profiles",
         "datalakes": [
             {"id":  515, "failure_notification": 24}
@@ -121,7 +121,7 @@
     {
         "id": "greifensee_wisp",
         "docker_id": "greifensee_wisp",
-        "repo_https": "https://gitlab.renkulab.io/eawag-surf/lake-greifen-platform.git",
+        "repo_https": "https://gitlab.eawag.ch/surf/data-pipelines/lake-greifen-platform.git",
         "repo_name": "lake-greifen-platform",
         "datalakes": [
             {"id":  505, "failure_notification": 24},
@@ -135,7 +135,7 @@
     {
         "id": "greifensee_meteo",
         "docker_id": "greifensee_meteo",
-        "repo_https": "https://gitlab.renkulab.io/eawag-surf/lake-greifen-meteostation.git",
+        "repo_https": "https://gitlab.eawag.ch/surf/data-pipelines/lake-greifen-meteostation.git",
         "repo_name": "lake-greifen-meteostation",
         "datalakes": [
             {"id":  932, "failure_notification": 6}
