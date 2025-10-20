@@ -15,7 +15,7 @@
     {
         "id": "lexplore_wisp",
         "docker_id": "lexplore_wisp",
-        "repo_https": "https://gitlab.renkulab.io/lexplore/lexplore-wisp-station.git",
+        "repo_https": "https://github.com/LeXPLORE-Platform/lexplore-wisp-station.git",
         "repo_name": "lexplore-wisp-station",
         "datalakes": [
             {"id":  1069, "failure_notification": 48}
@@ -55,7 +55,7 @@
     {
         "id": "lexplore_adcp",
         "docker_id": "lexplore_adcp",
-        "repo_https": "https://gitlab.renkulab.io/lexplore/acousticdopplercurrentprofiler.git",
+        "repo_https": "https://github.com/LeXPLORE-Platform/acousticdopplercurrentprofiler.git",
         "repo_name": "acousticdopplercurrentprofiler",
         "datalakes": [
             {"id":  600, "failure_notification": 12},
@@ -95,7 +95,7 @@
     {
         "id": "buchillon",
         "docker_id": "buchillon",
-        "repo_https": "https://gitlab.renkulab.io/lexplore/buchillon.git",
+        "repo_https": "https://github.com/LeXPLORE-Platform/buchillon.git",
         "repo_name": "buchillon",
         "datalakes": [
             {"id":  597, "failure_notification": 12}
