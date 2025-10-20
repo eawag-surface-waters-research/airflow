@@ -28,7 +28,7 @@
     {
         "id": "lexplore_thermister_chain",
         "docker_id": "lexplore_thermister_chain",
-        "repo_https": "https://gitlab.renkulab.io/lexplore/thermister-chain.git",
+        "repo_https": "https://github.com/LeXPLORE-Platform/thermister-chain.git",
         "repo_name": "thermister-chain",
         "datalakes": [
             {"id":  448, "failure_notification": 1}
@@ -41,7 +41,7 @@
     {
         "id": "lexplore_idronaut",
         "docker_id": "lexplore_idronaut",
-        "repo_https": "https://gitlab.renkulab.io/lexplore/idronaut-automatic-profiler.git",
+        "repo_https": "https://github.com/LeXPLORE-Platform/idronaut-automatic-profiler.git",
         "repo_name": "idronaut-automatic-profiler",
         "datalakes": [
             {"id":  666, "failure_notification": 12},
