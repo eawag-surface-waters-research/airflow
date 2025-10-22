@@ -77,6 +77,20 @@ prepare_simulation_files = BashOperator(
     dag=dag,
 )
 
+pull_docker = BashOperator(
+    task_id='pull_docker',
+    bash_command="""
+            if docker image inspect {{ dag_run.conf.docker }} > /dev/null 2>&1; then
+                echo "Docker image {{ dag_run.conf.docker }} already exists locally."
+            else
+                echo "Docker image {{ dag_run.conf.docker }} does not exist. Trying to pull it now..."
+                docker pull {{ dag_run.conf.docker }}
+            fi
+            """,
+    on_failure_callback=report_failure,
+    dag=dag,
+)
+
 run_simulation = BashOperator(
     task_id='run_simulation',
     bash_command='docker run '
@@ -130,4 +144,4 @@ remove_results = BashOperator(
     dag=dag,
 )
 
-prepare_simulation_files >> run_simulation >> postprocess_simulation_output >> process_restart_files >> send_results >> remove_results
+prepare_simulation_files >> pull_docker >> run_simulation >> postprocess_simulation_output >> process_restart_files >> send_results >> remove_results

@@ -73,25 +73,39 @@ dag = DAG(
 )
 
 prepare_simulation_files = BashOperator(
-        task_id='prepare_simulation_files',
-        bash_command="mkdir -p {{ filesystem }}/git;"
-                     "cd {{ filesystem }}/git;"
-                     "git clone {{ simulation_repo_https }} && cd {{ simulation_repo_name }} || cd {{ simulation_repo_name }} && git stash && git pull;"
-                     "python src/main.py -m mitgcm/{{ dag_run.conf.lake }} -d {{ dag_run.conf.docker }} -s {{ dag_run.conf.start }} -e {{ dag_run.conf.end }} -a {{ api }} -th {{ dag_run.conf.threads }} {{ parse_profile(dag_run.conf.profile) }};"
-                     "chmod -R 777 runs/{{ config_format_simulation_directory(dag_run.conf.docker)  }}_{{ dag_run.conf.lake }}_{{ dag_run.conf.start }}_{{ dag_run.conf.end }}_{{ dag_run.conf.threads }}",
-        on_failure_callback=report_failure,
-        dag=dag,
-    )
+    task_id='prepare_simulation_files',
+    bash_command="mkdir -p {{ filesystem }}/git;"
+                 "cd {{ filesystem }}/git;"
+                 "git clone {{ simulation_repo_https }} && cd {{ simulation_repo_name }} || cd {{ simulation_repo_name }} && git stash && git pull;"
+                 "python src/main.py -m mitgcm/{{ dag_run.conf.lake }} -d {{ dag_run.conf.docker }} -s {{ dag_run.conf.start }} -e {{ dag_run.conf.end }} -a {{ api }} -th {{ dag_run.conf.threads }} {{ parse_profile(dag_run.conf.profile) }};"
+                 "chmod -R 777 runs/{{ config_format_simulation_directory(dag_run.conf.docker)  }}_{{ dag_run.conf.lake }}_{{ dag_run.conf.start }}_{{ dag_run.conf.end }}_{{ dag_run.conf.threads }}",
+    on_failure_callback=report_failure,
+    dag=dag,
+)
+
+pull_docker = BashOperator(
+    task_id='pull_docker',
+    bash_command="""
+                    if docker image inspect {{ dag_run.conf.docker }} > /dev/null 2>&1; then
+                        echo "Docker image {{ dag_run.conf.docker }} already exists locally."
+                    else
+                        echo "Docker image {{ dag_run.conf.docker }} does not exist. Trying to pull it now..."
+                        docker pull {{ dag_run.conf.docker }}
+                    fi
+                    """,
+    on_failure_callback=report_failure,
+    dag=dag,
+)
 
 compile_simulation = BashOperator(
-        task_id='compile_simulation',
-        bash_command='cd {{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ config_format_simulation_directory(dag_run.conf.docker)  }}_{{ dag_run.conf.lake }}_{{ dag_run.conf.start }}_{{ dag_run.conf.end }}_{{ dag_run.conf.threads }};'
-                     'docker build -t {{ dag_run.conf.docker }}_mitgcm_{{ dag_run.conf.lake }}_{{ dag_run.conf.threads }} .',
-        on_failure_callback=report_failure,
-        retries=2,
-        retry_delay=timedelta(minutes=2),
-        dag=dag,
-    )
+    task_id='compile_simulation',
+    bash_command='cd {{ filesystem }}/git/{{ simulation_repo_name }}/runs/{{ config_format_simulation_directory(dag_run.conf.docker)  }}_{{ dag_run.conf.lake }}_{{ dag_run.conf.start }}_{{ dag_run.conf.end }}_{{ dag_run.conf.threads }};'
+                 'docker build -t {{ dag_run.conf.docker }}_mitgcm_{{ dag_run.conf.lake }}_{{ dag_run.conf.threads }} .',
+    on_failure_callback=report_failure,
+    retries=2,
+    retry_delay=timedelta(minutes=2),
+    dag=dag,
+)
 
 run_simulation = BashOperator(
     task_id='run_simulation',
@@ -145,4 +159,4 @@ remove_results = BashOperator(
     dag=dag,
 )
 
-prepare_simulation_files >> compile_simulation >> run_simulation >> postprocess_simulation_output >> upload_pickup_files >> send_results >> remove_results
+prepare_simulation_files >> pull_docker >> compile_simulation >> run_simulation >> postprocess_simulation_output >> upload_pickup_files >> send_results >> remove_results

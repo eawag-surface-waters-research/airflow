@@ -40,7 +40,7 @@ def create_dag(dag_id, prefix, run_date, schedule_interval, download_pool="defau
         schedule_interval=schedule_interval,
         catchup=False,
         tags=['sencast', 'operational'],
-        user_defined_macros={'docker': 'eawag/sencast:0.0.2',
+        user_defined_macros={'docker': 'eawag/sencast:0.1.0',
                              'DIAS': '/opt/airflow/filesystem/DIAS',
                              'git_repos': '/opt/airflow/filesystem/git',
                              'git_name': 'sencast',
@@ -57,6 +57,20 @@ def create_dag(dag_id, prefix, run_date, schedule_interval, download_pool="defau
         bash_command="mkdir -p {{ DIAS }}; mkdir -p {{ git_repos }}; cd {{ git_repos }}; "
                      "git clone --depth 1 {{ git_remote }} || "
                      "(cd {{ git_name }} ; git config --global --add safe.directory '*' ; git stash ; git pull)",
+        on_failure_callback=report_failure,
+        dag=dag,
+    )
+
+    pull_docker = BashOperator(
+        task_id='pull_docker',
+        bash_command="""
+            if docker image inspect {{ docker }} > /dev/null 2>&1; then
+                echo "Docker image {{ docker }} already exists locally."
+            else
+                echo "Docker image {{ docker }} does not exist. Trying to pull it now..."
+                docker pull {{ docker }}
+            fi
+            """,
         on_failure_callback=report_failure,
         dag=dag,
     )
@@ -103,7 +117,7 @@ def create_dag(dag_id, prefix, run_date, schedule_interval, download_pool="defau
         dag=dag,
     )
 
-    clone_repo >> write_parameter_files >> download_products >> run_sencast >> remove_parameter_file
+    clone_repo >> pull_docker >> write_parameter_files >> download_products >> run_sencast >> remove_parameter_file
 
     return dag
 

@@ -76,6 +76,20 @@ def create_dag(dag_id, parameters):
         dag=dag,
     )
 
+    pull_docker = BashOperator(
+        task_id='pull_docker',
+        bash_command="""
+                        if docker image inspect {{ docker }} > /dev/null 2>&1; then
+                            echo "Docker image {{ docker }} already exists locally."
+                        else
+                            echo "Docker image {{ docker }} does not exist. Trying to pull it now..."
+                            docker pull {{ docker }}
+                        fi
+                        """,
+        on_failure_callback=report_failure,
+        dag=dag,
+    )
+
     run_simulation = BashOperator(
         task_id='run_simulation',
         bash_command='docker run '
@@ -158,7 +172,7 @@ def create_dag(dag_id, parameters):
         dag=dag,
     )
 
-    prepare_simulation_files >> run_simulation >> postprocess_simulation_output >> events_simulation_output >> event_notifications >> send_results >> remove_results >> cache_data
+    prepare_simulation_files >> pull_docker >> run_simulation >> postprocess_simulation_output >> events_simulation_output >> event_notifications >> send_results >> remove_results >> cache_data
 
     return dag
 

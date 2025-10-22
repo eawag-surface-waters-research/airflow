@@ -38,7 +38,7 @@ dag = DAG(
     schedule_interval=None,
     catchup=False,
     tags=['sencast', 'test'],
-    user_defined_macros={'docker': 'eawag/sencast:0.0.2',
+    user_defined_macros={'docker': 'eawag/sencast:0.1.0',
                          'DIAS': '/opt/airflow/filesystem/DIAS',
                          'git_repos': '/opt/airflow/filesystem/git',
                          'git_name': 'sencast',
@@ -55,6 +55,20 @@ clone_repo = BashOperator(
     dag=dag,
 )
 
+pull_docker = BashOperator(
+    task_id='pull_docker',
+    bash_command="""
+            if docker image inspect {{ docker }} > /dev/null 2>&1; then
+                echo "Docker image {{ docker }} already exists locally."
+            else
+                echo "Docker image {{ docker }} does not exist. Trying to pull it now..."
+                docker pull {{ docker }}
+            fi
+            """,
+    on_failure_callback=report_failure,
+    dag=dag,
+)
+
 run_sencast_test = BashOperator(
     task_id='run_sencast_test',
     bash_command='docker run '
@@ -65,4 +79,4 @@ run_sencast_test = BashOperator(
     dag=dag,
 )
 
-clone_repo >> run_sencast_test
+clone_repo >> pull_docker >> run_sencast_test
