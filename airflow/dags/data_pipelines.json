@@ -197,8 +197,8 @@
         "datalakes": [
             {"id":  1073, "failure_notification": 6},
             {"id":  1074, "failure_notification": 6},
-            {"id":  1075, "failure_notification": 6},
-            {"id":  1077, "failure_notification": 6}
+            {"id":  1075, "failure_notification": 10},
+            {"id":  1077, "failure_notification": 10}
         ],
         "schedule_interval": "6 * * * *",
         "credential_id": "aegeri_mooring",
