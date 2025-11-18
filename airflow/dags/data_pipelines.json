@@ -93,6 +93,20 @@
         "email": ["james.runnalls@eawag.ch"]
     },
     {
+        "id": "lexplore_ctd",
+        "docker_id": "lexplore_ctd",
+        "repo_https": "https://github.com/LeXPLORE-Platform/platform-ctd-profiles.git",
+        "repo_name": "platform-ctd-profiles",
+        "datalakes": [
+            {"id":  674, "failure_notification": 2000},
+            {"id":  875, "failure_notification": 2000}
+        ],
+        "schedule_interval": "30 23 * * *",
+        "credential_id": "lexplore",
+        "credential_keys": ["ftp", "user", "password"],
+        "email": ["james.runnalls@eawag.ch"]
+    },
+    {
         "id": "buchillon",
         "docker_id": "buchillon",
         "repo_https": "https://github.com/LeXPLORE-Platform/buchillon.git",
