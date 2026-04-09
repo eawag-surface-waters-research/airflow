@@ -105,11 +105,16 @@ def create_dag(dag_id, parameters):
         on_failure_callback=report_failure,
         dag=dag,
     )
-    
+
+    extra_mounts = ""
+    if "mounts" in parameters:
+        for mount in parameters["mounts"]:
+            extra_mounts = extra_mounts + " -v " + mount
+
     run_pipeline = BashOperator(
         task_id='run_pipeline',
         bash_command='docker run -e AWS_ACCESS_KEY_ID={{ params.AWS_ID }} -e AWS_SECRET_ACCESS_KEY={{ params.AWS_KEY }} '
-                     '-v {{ FILESYSTEM }}/git/{{ repo_name }}:/repository --rm {{ docker_id }} -d -p -uf -dl {{ datalakes_ids }}',
+                     '-v {{ FILESYSTEM }}/git/{{ repo_name }}:/repository' + extra_mounts + ' --rm {{ docker_id }} -d -p -uf -dl {{ datalakes_ids }}',
         params={
             'AWS_ID': Variable.get("AWS_ACCESS_KEY_ID"),
             'AWS_KEY': Variable.get("AWS_SECRET_ACCESS_KEY")},
