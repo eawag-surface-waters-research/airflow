@@ -1,9 +1,8 @@
 from datetime import timedelta, datetime
 
 from airflow.operators.bash import BashOperator
-from airflow.operators.python_operator import PythonOperator
+from airflow.operators.python import PythonOperator
 from airflow.models import Variable
-from airflow.utils.dates import days_ago
 
 from functions.email import report_failure, report_success
 from functions.simulate import parse_profile, upload_restart_files
@@ -21,7 +20,7 @@ Example config input
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
-    'start_date': days_ago(2),
+    'start_date': datetime(2024, 1, 1),
     'email': ['james.runnalls@eawag.ch'],
     'email_on_failure': False,
     'email_on_retry': False,
@@ -44,7 +43,7 @@ dag = DAG(
     'simulate_delft3dflow_test_events',
     default_args=default_args,
     description='Test event detection algorithms',
-    schedule_interval=None,
+    schedule=None,
     catchup=False,
     tags=['simulation', 'on demand'],
     user_defined_macros={'filesystem': '/opt/airflow/filesystem',

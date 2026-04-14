@@ -1,5 +1,5 @@
-from airflow.operators.python_operator import PythonOperator
-from airflow.utils.dates import days_ago
+from airflow.operators.python import PythonOperator
+from datetime import datetime
 from airflow.models import Variable
 
 from functions.email import report_failure
@@ -10,7 +10,7 @@ from airflow import DAG
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
-    'start_date': days_ago(2),
+    'start_date': datetime(2024, 1, 1),
     'email': ['james.runnalls@eawag.ch'],
     'email_on_failure': False,
     'email_on_retry': False,
@@ -33,7 +33,7 @@ dag = DAG(
     'create_simstrat_doy',
     default_args=default_args,
     description='Create doy files for simstrat',
-    schedule_interval="0 0 2 1 *",
+    schedule="0 0 2 1 *",
     catchup=False,
     tags=['simstrat', 'doy'],
 )

@@ -48,7 +48,7 @@ dag = DAG(
     'sencast_metadata_reprocess',
     default_args=default_args,
     description=f'Reprocess metadata and cropped tiff files for Sencast operational pipelines',
-    schedule_interval=None,
+    schedule=None,
     catchup=False,
     tags=['sencast', 'on demand'],
     user_defined_macros={'git_repos': '/opt/airflow/filesystem/git',

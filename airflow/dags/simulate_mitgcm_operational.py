@@ -1,11 +1,9 @@
 import json
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from airflow.operators.bash import BashOperator
-from airflow.operators.python_operator import PythonOperator
+from airflow.operators.python import PythonOperator
 from airflow.models import Variable
-from airflow.utils.dates import days_ago
-
 from functions.email import report_failure
 from functions.simulate import (get_last_sunday, get_end_date, get_today, get_restart, cache_simulation_data,
                                 format_simulation_directory, process_event_notifications, upload_pickup)
@@ -17,7 +15,7 @@ def create_dag(dag_id, parameters):
     default_args = {
         'owner': 'airflow',
         'depends_on_past': False,
-        'start_date': days_ago(2),
+        'start_date': datetime(2024, 1, 1),
         'email': ['james.runnalls@eawag.ch'],
         'email_on_failure': False,
         'email_on_retry': False,
@@ -40,7 +38,7 @@ def create_dag(dag_id, parameters):
         dag_id,
         default_args=default_args,
         description='Operational MitGCM simulation.',
-        schedule_interval=parameters["schedule_interval"],
+        schedule=parameters["schedule_interval"],
         catchup=False,
         tags=['simulation', 'operational'],
         user_defined_macros={'filesystem': '/opt/airflow/filesystem',

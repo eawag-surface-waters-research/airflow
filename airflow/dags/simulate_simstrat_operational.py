@@ -1,9 +1,8 @@
 from datetime import datetime, timedelta
 
 from airflow.operators.bash import BashOperator
-from airflow.operators.python_operator import PythonOperator
+from airflow.operators.python import PythonOperator
 from airflow.models import Variable
-from airflow.utils.dates import days_ago
 
 from functions.simstrat import cache_simstrat_operational_data, validate_simstrat_operational_data
 
@@ -14,7 +13,7 @@ from airflow import DAG
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
-    'start_date': days_ago(2),
+    'start_date': datetime(2024, 1, 1),
     'email': ['james.runnalls@eawag.ch'],
     'email_on_failure': False,
     'email_on_retry': False,
@@ -37,7 +36,7 @@ dag = DAG(
     "simulate_simstrat_operational",
     default_args=default_args,
     description='Operational Simstrat simulation.',
-    schedule_interval="45 8 * * *",
+    schedule="45 8 * * *",
     catchup=False,
     tags=['simulation', 'operational'],
     user_defined_macros={'filesystem': '/opt/airflow/filesystem',

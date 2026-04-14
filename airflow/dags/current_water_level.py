@@ -1,5 +1,5 @@
 from airflow.operators.bash import BashOperator
-from airflow.utils.dates import days_ago
+from datetime import datetime
 from airflow.models import Variable
 
 from functions.email import report_failure
@@ -9,7 +9,7 @@ from airflow import DAG
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
-    'start_date': days_ago(2),
+    'start_date': datetime(2024, 1, 1),
     'email': ['james.runnalls@eawag.ch'],
     'email_on_failure': False,
     'email_on_retry': False,
@@ -32,7 +32,7 @@ dag = DAG(
     'current_water_level',
     default_args=default_args,
     description='Collect current water level values',
-    schedule_interval='5,25,45 * * * *',
+    schedule='5,25,45 * * * *',
     catchup=False,
     tags=['insitu', 'monitoring'],
 )

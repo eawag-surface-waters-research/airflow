@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 
 from airflow.operators.bash import BashOperator
-from airflow.operators.python_operator import PythonOperator
+from airflow.operators.python import PythonOperator
 from airflow.models import Variable
 
 from functions.email import report_failure
@@ -37,7 +37,7 @@ def create_dag(dag_id, prefix, run_date, schedule_interval, download_pool="defau
         dag_id,
         default_args=default_args,
         description='Process Collection data for the Alpine Space.',
-        schedule_interval=schedule_interval,
+        schedule=schedule_interval,
         catchup=False,
         tags=['sencast', 'operational'],
         user_defined_macros={'docker': 'eawag/sencast:0.2.0',

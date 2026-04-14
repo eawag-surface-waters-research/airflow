@@ -18,8 +18,7 @@ def report_failure(context):
                                       f'task_id={ti.task_id}/'
                                       f'attempt=1.log')),
         "graph_url": f'http://eaw-alplakes2:8080/dags/{ti.dag_id}/graph',
-        "formatted_exception": ''.join(
-            traceback.format_exception(etype=type(exception), value=exception, tb=exception.__traceback__)).strip(),
+        "formatted_exception": ''.join(traceback.format_exception(exception)).strip(),
         "task_id": ti.task_id,
         "dag_id": ti.dag_id,
         "start_date": ti.start_date
@@ -44,7 +43,7 @@ def report_success(context):
         "task_id": ti.task_id,
         "dag_id": ti.dag_id,
         "start_date": ti.start_date,
-        "runtime": datetime.now(timezone.utc) - dag_run.execution_date,
+        "runtime": datetime.now(timezone.utc) - dag_run.logical_date,
         "config": dag_run.conf if dag_run.conf else {}
     }
 
