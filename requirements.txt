@@ -17,6 +17,7 @@ cycler==0.12.1
 dask==2026.3.0
 fonttools==4.62.1
 fsspec==2026.3.0
+gsw==3.6.21
 holidays==0.94
 idna==3.11
 importlib_resources==7.1.0
