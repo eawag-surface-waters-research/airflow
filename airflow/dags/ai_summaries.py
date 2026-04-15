@@ -34,7 +34,7 @@ dag = DAG(
     'ai_summaries',
     default_args=default_args,
     description=f'AI summaries of Alplakes data',
-    schedule_interval="0 11,23 * * *",
+    schedule="0 11,23 * * *",
     catchup=False,
     tags=['ai', 'monitoring'],
     user_defined_macros={'git_repos': '/opt/airflow/filesystem/git',

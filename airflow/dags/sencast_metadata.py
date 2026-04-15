@@ -34,7 +34,7 @@ dag = DAG(
     'sencast_metadata',
     default_args=default_args,
     description=f'Generate metadata and cropped tiff files for Sencast operational pipelines',
-    schedule_interval="0 6 * * *",
+    schedule="0 6 * * *",
     catchup=False,
     tags=['sencast', 'operational'],
     user_defined_macros={'git_repos': '/opt/airflow/filesystem/git',

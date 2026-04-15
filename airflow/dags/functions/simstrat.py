@@ -293,7 +293,7 @@ def upload_simstrat_calibration_result(ds, **kwargs):
                       aws_access_key_id=aws_access_key_id,
                       aws_secret_access_key=aws_secret_access_key)
 
-    s3_name = "calibrations/simstrat/calibration_{}.json".format(kwargs['execution_date'].strftime('%Y%m%dT%H%M'))
+    s3_name = "calibrations/simstrat/calibration_{}.json".format(kwargs['logical_date'].strftime('%Y%m%dT%H%M'))
     s3.upload_file(local_file, bucket_key, s3_name)
     print("Results", bucket + "/" + s3_name)
 

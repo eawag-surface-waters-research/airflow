@@ -1,9 +1,8 @@
 from datetime import timedelta, datetime
 
 from airflow.operators.bash import BashOperator
-from airflow.operators.python_operator import PythonOperator
+from airflow.operators.python import PythonOperator
 from airflow.models import Variable
-from airflow.utils.dates import days_ago
 
 from functions.email import report_failure
 from functions.simulate import parse_profile, format_simulation_directory, upload_pickup
@@ -26,7 +25,7 @@ Use "profile": false for restarting from restart files.
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
-    'start_date': days_ago(2),
+    'start_date': datetime(2024, 1, 1),
     'email': ['james.runnalls@eawag.ch'],
     'email_on_failure': False,
     'email_on_retry': False,
@@ -53,7 +52,7 @@ dag = DAG(
     'simulate_mitgcm_on_demand',
     default_args=default_args,
     description='On Demand MitGCM simulation.',
-    schedule_interval=None,
+    schedule=None,
     catchup=False,
     tags=['simulation', 'on demand'],
     user_defined_macros={'filesystem': '/opt/airflow/filesystem',

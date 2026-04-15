@@ -1,11 +1,9 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 import logging
 
-from airflow.operators.python_operator import PythonOperator
+from airflow.operators.python import PythonOperator
 from airflow.operators.bash import BashOperator
 from airflow.operators.email import EmailOperator
-from airflow.utils.dates import days_ago
-
 from functions.email import report_failure, report_success
 
 from airflow import DAG
@@ -13,7 +11,7 @@ from airflow import DAG
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
-    'start_date': days_ago(2),
+    'start_date': datetime(2024, 1, 1),
     'email': ['james.runnalls@eawag.ch'],
     'email_on_failure': False,
     'email_on_retry': False,
@@ -36,7 +34,7 @@ dag = DAG(
     'test_setup',
     default_args=default_args,
     description='Test all services functioning.',
-    schedule_interval=None,
+    schedule=None,
     tags=['test', 'on demand'],
 )
 

@@ -1,10 +1,14 @@
-# Debian GNU/Linux 11 (bullseye) with Python3.9
-FROM apache/airflow:2.3.4-python3.9
+# Debian GNU/Linux 12 (bookworm) with Python3.12
+FROM apache/airflow:2.11.2-python3.12
 COPY requirements.txt /requirements.txt
 RUN pip install -r /requirements.txt
 USER root
-RUN apt-get -y update && apt-get -y install git
-RUN curl https://download.docker.com/linux/debian/dists/bullseye/pool/stable/amd64/docker-ce-cli_29.1.1-1~debian.11~bullseye_amd64.deb  --output /docker-ce-cli_29.1.1-1~debian.11~bullseye_amd64.deb
-RUN dpkg -i /docker-ce-cli_29.1.1-1~debian.11~bullseye_amd64.deb
-RUN apt-get -y install sshpass
+RUN apt-get -y update && apt-get -y install git sshpass ca-certificates curl \
+    && install -m 0755 -d /etc/apt/keyrings \
+    && curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc \
+    && chmod a+r /etc/apt/keyrings/docker.asc \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
+       | tee /etc/apt/sources.list.d/docker.list > /dev/null \
+    && apt-get update \
+    && apt-get -y install docker-ce-cli
 USER airflow

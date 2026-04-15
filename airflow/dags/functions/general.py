@@ -6,8 +6,6 @@ import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta, timezone
 from scipy.interpolate import interp1d
-from airflow.utils.email import send_email
-
 
 def download_datalakes_data(datalakes_id, depth, start, stop):
     response = requests.get("https://api.datalakes-eawag.ch/datasetparameters?datasets_id={}".format(datalakes_id))

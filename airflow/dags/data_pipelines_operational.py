@@ -5,9 +5,8 @@ import requests
 from datetime import timedelta, datetime, timezone
 
 from airflow.operators.bash import BashOperator
-from airflow.operators.python_operator import PythonOperator
+from airflow.operators.python import PythonOperator
 from airflow.models import Variable
-from airflow.utils.dates import days_ago
 
 from functions.email import report_failure
 
@@ -56,7 +55,7 @@ def create_dag(dag_id, parameters):
     default_args = {
         'owner': 'airflow',
         'depends_on_past': False,
-        'start_date': days_ago(2),
+        'start_date': datetime(2024, 1, 1),
         'email': parameters["email"],
         'email_on_failure': False,
         'email_on_retry': False,
@@ -79,7 +78,7 @@ def create_dag(dag_id, parameters):
         dag_id,
         default_args=default_args,
         description='Operational data pipeline.',
-        schedule_interval=None if not parameters["schedule_interval"] else parameters["schedule_interval"],
+        schedule=None if not parameters["schedule_interval"] else parameters["schedule_interval"],
         max_active_runs=1,
         catchup=False,
         tags=['data pipeline', 'operational'],
