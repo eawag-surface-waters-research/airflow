@@ -303,5 +303,18 @@
           "credential_id": "nawa",
           "credential_keys": ["ftp", "user", "password"],
           "email": ["james.runnalls@eawag.ch"]
+      },
+      {
+          "id": "unil",
+          "docker_id": "unil",
+          "repo_https": "https://github.com/eawag-surface-waters-research/unil-meteo-soil-station.git",
+          "repo_name": "unil-meteo-soil-station",
+          "datalakes": [
+              {"id":  1437, "failure_notification": 2}
+          ],
+          "schedule_interval": "3,23,43 * * * *",
+          "credential_id": "unil",
+          "credential_keys": ["ftp", "user", "password"],
+          "email": ["james.runnalls@eawag.ch"]
       }
 ]
