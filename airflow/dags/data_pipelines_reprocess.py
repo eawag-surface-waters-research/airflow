@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
 from airflow.models import Variable
+from airflow.models.param import Param
 from functions.email import report_failure, report_success
 
 from airflow import DAG
@@ -64,6 +65,9 @@ dag = DAG(
     schedule=None,
     catchup=False,
     tags=['data pipeline', 'reprocess'],
+    params={
+        "id": Param("lexplore_meteostation", type="string", title="Pipeline ID"),
+    },
     user_defined_macros={'filesystem': '/opt/airflow/filesystem',
                          'FILESYSTEM': Variable.get("FILESYSTEM")}
 )

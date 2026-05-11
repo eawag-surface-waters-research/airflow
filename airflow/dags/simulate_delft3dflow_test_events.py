@@ -3,6 +3,7 @@ from datetime import timedelta, datetime
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
 from airflow.models import Variable
+from airflow.models.param import Param
 
 from functions.email import report_failure, report_success
 from functions.simulate import parse_profile, upload_restart_files
@@ -46,6 +47,10 @@ dag = DAG(
     schedule=None,
     catchup=False,
     tags=['simulation', 'on demand'],
+    params={
+        "folder": Param("media/simulations/delft3d-flow/test_events/geneva", type="string"),
+        "docker": Param("eawag/delft3d-flow:6.02.10.142612", type="string"),
+    },
     user_defined_macros={'filesystem': '/opt/airflow/filesystem',
                          'simulation_repo_name': "alplakes-simulations",
                          'simulation_repo_https': "https://github.com/eawag-surface-waters-research/alplakes-simulations.git"

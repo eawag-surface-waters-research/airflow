@@ -3,6 +3,7 @@ from datetime import timedelta, datetime
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
 from airflow.models import Variable
+from airflow.models.param import Param
 
 from functions.email import report_failure
 from functions.simulate import parse_profile, format_simulation_directory, upload_pickup
@@ -55,6 +56,16 @@ dag = DAG(
     schedule=None,
     catchup=False,
     tags=['simulation', 'on demand'],
+    params={
+        "lake": Param("zurich", type="string"),
+        "profile": Param("20190109", type=["string", "boolean"],
+                         description='Date string (YYYYMMDD) or false to restart from restart files.'),
+        "start": Param("20190109", type="string"),
+        "end": Param("20190110", type="string"),
+        "threads": Param("5_2", type="string"),
+        "server_folder": Param("results_reprocess", type="string"),
+        "docker": Param("eawag/mitgcm:67z", type="string"),
+    },
     user_defined_macros={'filesystem': '/opt/airflow/filesystem',
                          'FILESYSTEM': Variable.get("FILESYSTEM"),
                          'model': 'mitgcm',

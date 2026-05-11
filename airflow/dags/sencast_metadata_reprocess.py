@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 
 from airflow.operators.bash import BashOperator
 from airflow.models import Variable
+from airflow.models.param import Param
 from airflow.utils.task_group import TaskGroup
 
 from functions.email import report_failure
@@ -51,6 +52,12 @@ dag = DAG(
     schedule=None,
     catchup=False,
     tags=['sencast', 'on demand'],
+    params={
+        "lakes": Param("false", type="string",
+                       description='Comma-separated lake names (e.g. "zurich,geneva"), or "false" for full reprocessing.'),
+        "period": Param("false", type="string",
+                        description='Period as "YYYYMMDD_YYYYMMDD", or "false" for full reprocessing.'),
+    },
     user_defined_macros={'git_repos': '/opt/airflow/filesystem/git',
                          'git_name': 'alplakes-sencast-metadata',
                          'docker': 'eawag/sencast-metadata:1.0.0',
