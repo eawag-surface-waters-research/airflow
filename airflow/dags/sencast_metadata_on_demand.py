@@ -9,18 +9,18 @@ from functions.email import report_failure
 from airflow import DAG
 
 """
-Run sencast-metadata for a single user-specified product with fully configurable paths.
+Run sencast-metadata for a single user-specified product.
 
-Example config input (custom isolated run):
+`metadata_name` is the product identifier passed to -mn (used downstream, e.g. "sentinel2").
+`folder` is the subdirectory name used in local and remote paths (e.g. "sentinel2" or
+"sentinel3_dimark"); it may differ from metadata_name.
+
+Example config input:
 {
-  "local_tiff": "/media/remotesensing/sandbox/local_tiff/sentinel2",
-  "local_tiff_cropped": "/media/remotesensing/sandbox/local_tiff_cropped/sentinel2",
-  "local_metadata": "/media/remotesensing/sandbox/local_metadata/sentinel2",
-  "remote_tiff": "s3://eawagrs/datalakes/alplakes",
-  "remote_tiff_cropped": "s3://eawagrs/alplakes-sandbox/cropped/sentinel2",
-  "remote_metadata": "s3://eawagrs/alplakes-sandbox/metadata/sentinel2",
-  "metadata_summary": "s3://eawagrs/alplakes-sandbox/metadata/summary.json",
   "metadata_name": "sentinel2",
+  "folder": "sentinel3_dimark",
+  "remote_tiff": "s3://eawagrs/datalakes/alplakes",
+  "metadata_summary": "s3://eawagrs/alplakes/metadata/summary.json",
   "extra_flags": "-u -r",
   "lakes": "geneva",
   "period": "20240101_20240201"
@@ -47,22 +47,15 @@ dag = DAG(
     catchup=False,
     tags=['sencast', 'on demand'],
     params={
-        "local_tiff": Param("/media/remotesensing/local_tiff/sentinel2", type="string",
-                            description='Host path (under FILESYSTEM) mounted as /local_tiff in the container.'),
-        "local_tiff_cropped": Param("/media/remotesensing/local_tiff_cropped/sentinel2", type="string",
-                                    description='Host path (under FILESYSTEM) mounted as /local_tiff_cropped.'),
-        "local_metadata": Param("/media/remotesensing/local_metadata/sentinel2", type="string",
-                                description='Host path (under FILESYSTEM) mounted as /local_metadata.'),
+        "metadata_name": Param("sentinel2", type="string",
+                               description='Metadata product name passed to -mn (used downstream).'),
+        "folder": Param("sentinel2", type="string",
+                        description='Subdirectory name used in local and remote paths '
+                                    '(e.g. "sentinel2" or "sentinel3_dimark"). May differ from metadata_name.'),
         "remote_tiff": Param("s3://eawagrs/datalakes/alplakes", type="string",
                              description='Input tiff bucket/prefix (-rt).'),
-        "remote_tiff_cropped": Param("s3://eawagrs/alplakes/cropped/sentinel2", type="string",
-                                     description='Cropped tiff output bucket/prefix (-rtc).'),
-        "remote_metadata": Param("s3://eawagrs/alplakes/metadata/sentinel2", type="string",
-                                 description='Metadata output bucket/prefix (-rm).'),
         "metadata_summary": Param("s3://eawagrs/alplakes/metadata/summary.json", type="string",
                                   description='Full S3 path of the summary.json output (-ms).'),
-        "metadata_name": Param("sentinel2", type="string",
-                               description='Metadata product name (-mn).'),
         "extra_flags": Param("-u -r", type="string",
                              description='Trailing flags appended to the container command. Use "-u" for '
                                          'operational mode or "-u -r" for reprocess.'),
@@ -106,22 +99,22 @@ with dag:
 
     run_metadata = BashOperator(
         task_id='run_metadata',
-        bash_command='mkdir -p {{ filesystem }}{{ params.local_tiff }}; '
-                     'mkdir -p {{ filesystem }}{{ params.local_tiff_cropped }}; '
-                     'mkdir -p {{ filesystem }}{{ params.local_metadata }}; '
+        bash_command='mkdir -p {{ filesystem }}/media/remotesensing/local_tiff/{{ params.folder }}; '
+                     'mkdir -p {{ filesystem }}/media/remotesensing/local_tiff_cropped/{{ params.folder }}; '
+                     'mkdir -p {{ filesystem }}/media/remotesensing/local_metadata/{{ params.folder }}; '
                      'docker run '
                      '-e AWS_ACCESS_KEY_ID={{ params.AWS_ID }} '
                      '-e AWS_SECRET_ACCESS_KEY={{ params.AWS_KEY }} '
                      '-v {{ FILESYSTEM }}/git/{{ git_name }}:/repository '
-                     '-v {{ FILESYSTEM }}{{ params.local_tiff }}:/local_tiff '
-                     '-v {{ FILESYSTEM }}{{ params.local_tiff_cropped }}:/local_tiff_cropped '
-                     '-v {{ FILESYSTEM }}{{ params.local_metadata }}:/local_metadata '
+                     '-v {{ FILESYSTEM }}/media/remotesensing/local_tiff/{{ params.folder }}:/local_tiff '
+                     '-v {{ FILESYSTEM }}/media/remotesensing/local_tiff_cropped/{{ params.folder }}:/local_tiff_cropped '
+                     '-v {{ FILESYSTEM }}/media/remotesensing/local_metadata/{{ params.folder }}:/local_metadata '
                      '--rm '
                      '{{ docker }} '
                      '-rt {{ params.remote_tiff }} '
-                     '-rtc {{ params.remote_tiff_cropped }} '
+                     '-rtc s3://eawagrs/alplakes/cropped/{{ params.folder }} '
                      '-g {{ lake_geometry }} '
-                     '-rm {{ params.remote_metadata }} '
+                     '-rm s3://eawagrs/alplakes/metadata/{{ params.folder }} '
                      '-ms {{ params.metadata_summary }} '
                      '-mn {{ params.metadata_name }} '
                      '{{ params.extra_flags }} '
