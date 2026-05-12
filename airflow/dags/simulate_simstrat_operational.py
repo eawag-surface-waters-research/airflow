@@ -68,7 +68,7 @@ cache_data = PythonOperator(
         task_id='cache_data',
         python_callable=cache_simstrat_operational_data,
         op_kwargs={"bucket": "https://alplakes-eawag.s3.eu-central-1.amazonaws.com",
-                   "api": "https://alplakes-api.eawag.ch",
+                   "api": "https://alplakes-internal-api.eawag.ch",
                    'AWS_ID': Variable.get("AWS_ACCESS_KEY_ID"),
                    'AWS_KEY': Variable.get("AWS_SECRET_ACCESS_KEY")},
         on_failure_callback=report_failure,
@@ -78,7 +78,7 @@ cache_data = PythonOperator(
 validate_results = PythonOperator(
         task_id='validate_results',
         python_callable=validate_simstrat_operational_data,
-        op_kwargs={"api": "https://alplakes-api.eawag.ch"},
+        op_kwargs={"api": "https://alplakes-internal-api.eawag.ch"},
         retries=0,
         on_failure_callback=report_failure,
         dag=dag,

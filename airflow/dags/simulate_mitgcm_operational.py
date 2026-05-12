@@ -157,7 +157,7 @@ def create_dag(dag_id, parameters):
         op_kwargs={"lake": parameters["simulation_id"],
                    "model": "mitgcm",
                    "bucket": "https://alplakes-eawag.s3.eu-central-1.amazonaws.com",
-                   "api": "https://alplakes-api.eawag.ch",
+                   "api": "https://alplakes-internal-api.eawag.ch",
                    'AWS_ID': Variable.get("AWS_ACCESS_KEY_ID"),
                    'AWS_KEY': Variable.get("AWS_SECRET_ACCESS_KEY")},
         on_failure_callback=report_failure,

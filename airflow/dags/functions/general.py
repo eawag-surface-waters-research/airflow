@@ -139,7 +139,7 @@ def download_1d_model_data(api, model_type, model_id, depth, start, stop):
 
 
 def cache_performance(model_type, model_id, s3, bucket="https://alplakes-eawag.s3.eu-central-1.amazonaws.com",
-                      branch="master", api="https://alplakes-api.eawag.ch"):
+                      branch="master", api="https://alplakes-internal-api.eawag.ch"):
     response = requests.get("{}/static/website/metadata/{}/performance.json".format(bucket, branch))
     p = response.json()
     bucket_key = bucket.split(".")[0].split("//")[1]
