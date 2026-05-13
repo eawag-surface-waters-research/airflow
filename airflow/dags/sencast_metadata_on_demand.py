@@ -57,8 +57,8 @@ dag = DAG(
         "metadata_summary": Param("s3://eawagrs/alplakes/metadata/summary.json", type="string",
                                   description='Full S3 path of the summary.json output (-ms).'),
         "extra_flags": Param("-u -r", type="string",
-                             description='Trailing flags appended to the container command. Use "-u" for '
-                                         'operational mode or "-u -r" for reprocess.'),
+                             description='Trailing flags appended to the container command. Use "-u" to upload results '
+                                         'to S3 and "-r" for reprocessing (default is operational).'),
         "lakes": Param("false", type="string",
                        description='Comma-separated lake names (e.g. "zurich,geneva"), or "false" for all (-n).'),
         "period": Param("false", type="string",
