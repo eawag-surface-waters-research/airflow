@@ -99,10 +99,15 @@ services:
     <<: *airflow-common
     command: scheduler
     healthcheck:
-      test: ["CMD-SHELL", 'airflow jobs check --job-type SchedulerJob --hostname "$${HOSTNAME}"']
-      interval: 10s
+      test:
+        - "CMD-SHELL"
+        - >-
+          airflow jobs check --job-type SchedulerJob --hostname "$${HOSTNAME}"
+          && test -n "$$(find /opt/airflow/logs/scheduler -type f -name '*.log' -mmin -60 -print -quit 2>/dev/null)"
+      interval: 30s
       timeout: 10s
-      retries: 5
+      retries: 3
+      start_period: 5m
     restart: unless-stopped
     depends_on:
       <<: *airflow-common-depends-on
@@ -111,6 +116,11 @@ services:
 
   airflow-worker-api:
     <<: *airflow-common
+    entrypoint:
+      - /bin/bash
+      - -c
+      - 'umask 0002 && exec /usr/bin/dumb-init -- /entrypoint "$$@"'
+      - --
     command: celery worker -q api,general
     user: root
     healthcheck:
@@ -229,6 +239,11 @@ services:
 
   airflow-worker-simulation:
     <<: *airflow-common
+    entrypoint:
+      - /bin/bash
+      - -c
+      - 'umask 0002 && exec /usr/bin/dumb-init -- /entrypoint "$$@"'
+      - --
     command: celery worker -q simulation,general
     user: root
     profiles:

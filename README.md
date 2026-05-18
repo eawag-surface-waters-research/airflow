@@ -144,6 +144,36 @@ docker ps
 docker exec -it 'container-id' bash
 ```
 
+#### Healthcheck email alerts
+
+`scripts/check_unhealthy_containers.py` queries `docker ps --filter health=unhealthy` and emails a recipient when the set of unhealthy containers changes. State is persisted at `/var/tmp/alplakes_unhealthy_state` so a long-running incident produces exactly one alert (and one recovery email), regardless of how often cron runs.
+
+The script reads SMTP credentials and the recipient from `.env`:
+
+```yaml
+GMAIL_ADDRESS=<sender gmail>
+GMAIL_PASSWORD=<gmail app password>
+HEALTHCHECK_EMAIL_TO=<recipient>   # optional; defaults to GMAIL_ADDRESS
+```
+
+Install the cron entry (runs every 15 minutes — adjust the absolute path to wherever you cloned the repo):
+
+```console
+( crontab -l 2>/dev/null; echo "*/15 * * * * $(pwd)/scripts/check_unhealthy_containers.py >> /var/tmp/alplakes_healthcheck.log 2>&1" ) | crontab -
+```
+
+Run this from the repo root so `$(pwd)` resolves correctly. Verify with `crontab -l`. The script is silent on the happy path; only crashes and SMTP errors are written to `/var/tmp/alplakes_healthcheck.log`.
+
+To smoke-test the email path without waiting for a real failure:
+
+```console
+echo "fake-container" > /var/tmp/alplakes_unhealthy_state
+./scripts/check_unhealthy_containers.py
+rm /var/tmp/alplakes_unhealthy_state
+```
+
+This makes the script think a previously-unhealthy container has recovered and sends a recovery email.
+
 ## Adding Workflows
 
 New workflows can be added by including new python dags into the `airflow/dags` folder. 
