@@ -116,13 +116,14 @@ services:
 
   airflow-worker-api:
     <<: *airflow-common
-    entrypoint:
-      - /bin/bash
-      - -c
-      - 'umask 0002 && exec /usr/bin/dumb-init -- /entrypoint "$$@"'
-      - --
     command: celery worker -q api,general
     user: root
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/plugins:/opt/airflow/plugins
+      - ./keys:/opt/airflow/keys
+      - "${FILESYSTEM}:/opt/airflow/filesystem"
+      - /var/run/docker.sock:/var/run/docker.sock
     healthcheck:
       test:
         - "CMD-SHELL"
@@ -239,13 +240,14 @@ services:
 
   airflow-worker-simulation:
     <<: *airflow-common
-    entrypoint:
-      - /bin/bash
-      - -c
-      - 'umask 0002 && exec /usr/bin/dumb-init -- /entrypoint "$$@"'
-      - --
     command: celery worker -q simulation,general
     user: root
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/plugins:/opt/airflow/plugins
+      - ./keys:/opt/airflow/keys
+      - "${FILESYSTEM}:/opt/airflow/filesystem"
+      - /var/run/docker.sock:/var/run/docker.sock
     profiles:
       - dev
     healthcheck:
