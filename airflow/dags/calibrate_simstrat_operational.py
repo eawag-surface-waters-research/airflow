@@ -1,6 +1,7 @@
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
 from airflow.models import Variable
+from airflow.models.param import Param
 from datetime import datetime
 
 from functions.simstrat import upload_simstrat_calibration_result
@@ -38,6 +39,10 @@ dag = DAG(
     schedule=None,
     catchup=False,
     tags=['simulation', 'calibration'],
+    params={
+        "argument_file": Param("calibration", type="string",
+                               description='Name of the argument file (without extension) to use for calibration.'),
+    },
     user_defined_macros={'filesystem': '/opt/airflow/filesystem',
                          'FILESYSTEM': Variable.get("FILESYSTEM"),
                          'simulation_repo_https': "https://github.com/Eawag-AppliedSystemAnalysis/operational-simstrat.git",
@@ -52,7 +57,7 @@ run_calibration = BashOperator(
                  "git config --global --add safe.directory '*';"
                  "git clone --recurse-submodules {{ simulation_repo_https }} && cd {{ simulation_repo_name }} || cd {{ simulation_repo_name }} && git stash && git pull;"
                  "git config submodule.recurse true;"
-                 "python src/calibrator.py calibration docker_dir={{ FILESYSTEM }}/git/calibrate/{{ simulation_repo_name }};",
+                 "python src/calibrator.py {{ dag_run.conf.argument_file }} docker_dir={{ FILESYSTEM }}/git/calibrate/{{ simulation_repo_name }};",
     on_failure_callback=report_failure,
     dag=dag,
 )
