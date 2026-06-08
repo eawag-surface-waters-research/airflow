@@ -362,3 +362,20 @@ def upload_pickup(ds, **kwargs):
                     s3.upload_file(file_path, bucket_key, "simulations/{}/restart-files/{}/{}".format(model, lake, file))
 
 
+def upload_restart(ds, **kwargs):
+    folder = kwargs["folder"]
+    lake = kwargs["lake"]
+    model = kwargs["model"]
+    bucket = kwargs["bucket"]
+    aws_access_key_id = kwargs["AWS_ID"]
+    aws_secret_access_key = kwargs["AWS_KEY"]
+    bucket_key = bucket.split(".")[0].split("//")[1]
+
+    s3 = boto3.client("s3",
+                      aws_access_key_id=aws_access_key_id,
+                      aws_secret_access_key=aws_secret_access_key)
+
+    for file in os.listdir(folder):
+        if file.startswith("restart_") and file.endswith(".hot"):
+            print("Uploading: {}".format(file))
+            s3.upload_file(os.path.join(folder, file), bucket_key, "simulations/{}/restart-files/{}/{}".format(model, lake, file))

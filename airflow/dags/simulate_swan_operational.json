@@ -1,0 +1,8 @@
+[
+    {
+        "simulation_id": "geneva",
+        "name": "Lake Geneva",
+        "schedule_interval": "0 9 * * *",
+        "docker": "delftwaves/swan:v41.51"
+    }
+]
