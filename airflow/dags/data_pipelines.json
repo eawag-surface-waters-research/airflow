@@ -63,8 +63,7 @@
             {"id":  807, "failure_notification": 12},
             {"id":  808, "failure_notification": 12},
             {"id":  809, "failure_notification": 12},
-            {"id":  810, "failure_notification": 12},
-            {"id":  822, "failure_notification": 12}
+            {"id":  810, "failure_notification": 12}
         ],
         "schedule_interval": "0 */6 * * *",
         "credential_id": "lexplore",
