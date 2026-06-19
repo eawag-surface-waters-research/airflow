@@ -60,12 +60,10 @@
         "datalakes": [
             {"id":  802, "failure_notification": 12},
             {"id":  803, "failure_notification": 12},
-            {"id":  804, "failure_notification": 12},
-            {"id":  805, "failure_notification": 12},
-            {"id":  806, "failure_notification": 12},
             {"id":  807, "failure_notification": 12},
             {"id":  808, "failure_notification": 12},
             {"id":  809, "failure_notification": 12},
+            {"id":  810, "failure_notification": 12},
             {"id":  822, "failure_notification": 12}
         ],
         "schedule_interval": "0 */6 * * *",
