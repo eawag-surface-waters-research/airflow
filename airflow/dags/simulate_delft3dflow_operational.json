@@ -28,6 +28,20 @@
         "docker": "eawag/delft3d-flow:6.02.10.142612"
     },
     {
+        "simulation_id": "annecy",
+        "name": "Annecy",
+        "schedule_interval": "50 8 * * *",
+        "cores": 6,
+        "docker": "eawag/delft3d-flow:6.02.10.142612"
+    },
+    {
+        "simulation_id": "bourget",
+        "name": "Bourget",
+        "schedule_interval": "55 8 * * *",
+        "cores": 6,
+        "docker": "eawag/delft3d-flow:6.02.10.142612"
+    },
+    {
         "simulation_id": "garda",
         "name": "Lake Garda",
         "schedule_interval": "20 9 * * *",
