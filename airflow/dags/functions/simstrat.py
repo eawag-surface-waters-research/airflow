@@ -16,6 +16,12 @@ def iso_to_unix(input_time):
     return int(datetime.fromisoformat(input_time).astimezone(timezone.utc).timestamp()) * 1000
 
 
+def remove_data_assimilation_lakes(lakes):
+    # Drop data assimilation variants (e.g. "upperlugano_python_enkf") whose base lake is already present
+    lake_names = {lake["name"] for lake in lakes}
+    return [lake for lake in lakes if not ("_" in lake["name"] and lake["name"].split("_")[0] in lake_names)]
+
+
 def zip_files(base_folder, file_paths, output_filename):
     with zipfile.ZipFile(output_filename, 'w') as f:
         for file_path in file_paths:
@@ -33,6 +39,7 @@ def validate_simstrat_operational_data(ds, **kwargs):
     if response.status_code != 200:
         raise ValueError("Unable to access Simstrat metadata")
     lakes = next((d for d in response.json() if d.get('model') == "simstrat"), {"lakes": []})["lakes"]
+    lakes = remove_data_assimilation_lakes(lakes)
     failed = []
     now = datetime.now(timezone.utc)
     midnight_today = datetime(year=now.year, month=now.month, day=now.day, tzinfo=timezone.utc)
@@ -77,6 +84,7 @@ def cache_simstrat_operational_data(ds, **kwargs):
     if response.status_code != 200:
         raise ValueError("Unable to access Simstrat metadata")
     lakes = next((d for d in response.json() if d.get('model') == "simstrat"), {"lakes": []})["lakes"]
+    lakes = remove_data_assimilation_lakes(lakes)
 
     response = requests.get("{}/simulations/forecast.json".format(bucket))
     if response.status_code == 200:
@@ -90,7 +98,7 @@ def cache_simstrat_operational_data(ds, **kwargs):
     start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=1)
     end = start + timedelta(days=6)
     for lake in lakes:
-        if lake["name"] in rename and lake["name"] == False:
+        if lake["name"] in rename and rename[lake["name"]] == False:
             continue
         data = {}
         for parameter in parameters:
@@ -230,6 +238,7 @@ def create_simstrat_doy(ds, **kwargs):
     if response.status_code != 200:
         raise ValueError("Unable to access Simstrat metadata")
     lakes = response.json()[0]["lakes"]
+    lakes = remove_data_assimilation_lakes(lakes)
     for lake in lakes:
         for depth in depths:
             for parameter in parameters:
@@ -261,6 +270,7 @@ def cache_simstrat_doy(ds, **kwargs):
     if response.status_code != 200:
         raise ValueError("Unable to access Simstrat metadata")
     lakes = response.json()[0]["lakes"]
+    lakes = remove_data_assimilation_lakes(lakes)
     for lake in lakes:
         for depth in depths:
             for parameter in parameters:
