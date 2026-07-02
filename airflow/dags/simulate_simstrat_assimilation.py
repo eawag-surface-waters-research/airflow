@@ -34,7 +34,7 @@ dag = DAG(
     "simulate_simstrat_assimilation",
     default_args=default_args,
     description='Operational Simstrat assimilation.',
-    schedule="15 9 * * *",
+    schedule="35 8 * * *",
     catchup=False,
     tags=['simulation', 'operational'],
     user_defined_macros={'filesystem': '/opt/airflow/filesystem',
