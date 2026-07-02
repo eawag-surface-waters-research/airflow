@@ -53,11 +53,13 @@ dag = DAG(
 
 run_simulation = BashOperator(
     task_id='run_simulation',
-    bash_command="mkdir -p {{ filesystem }}/git;"
-                 "cd {{ filesystem }}/git;"
-                 "git clone {{ simulation_repo_https }} && cd {{ simulation_repo_name }} || cd {{ simulation_repo_name }} && git stash && git pull;"
+    bash_command="mkdir -p {{ filesystem }}/git/assimilation;"
+                 "cd {{ filesystem }}/git/assimilation;"
+                 "git config --global --add safe.directory '*';"
+                 "git clone --recurse-submodules {{ simulation_repo_https }} && cd {{ simulation_repo_name }} || cd {{ simulation_repo_name }} && git stash && git pull;"
+                 "git config submodule.recurse true;"
                  "python src/data_assimilation.py assimilation server_host={{ API_HOST }} sever_user={{ API_USER }} server_password={{ API_PASSWORD }} visualcrossing_key={{ VISUALCROSSING_KEY }} "
-                 "overwrite_simulation={{ params.overwrite_simulation }} docker_dir={{ FILESYSTEM }}/git/{{ simulation_repo_name }}",
+                 "overwrite_simulation={{ params.overwrite_simulation }} docker_dir={{ FILESYSTEM }}/git/assimilation/{{ simulation_repo_name }}",
     on_failure_callback=report_failure,
     dag=dag,
 )
