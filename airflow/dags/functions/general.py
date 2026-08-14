@@ -1,5 +1,8 @@
+import os
 import math
 import json
+import boto3
+import netCDF4
 import tempfile
 import requests
 import numpy as np
@@ -211,6 +214,61 @@ def cache_performance(model_type, model_id, s3, bucket="https://alplakes-eawag.s
         return round(sum(rmse_total) / len(rmse_total), 1)
     else:
         return False
+
+
+def cache_bodensee_online_data(ds, **kwargs):
+    url = kwargs["url"]
+    bucket = kwargs["bucket"]
+    key = kwargs["key"]
+    depth = kwargs.get("depth", 1.0)
+    aws_access_key_id = kwargs["AWS_ID"]
+    aws_secret_access_key = kwargs["AWS_KEY"]
+    bucket_key = bucket.split(".")[0].split("//")[1]
+
+    s3 = boto3.client("s3",
+                      aws_access_key_id=aws_access_key_id,
+                      aws_secret_access_key=aws_secret_access_key)
+
+    response = requests.get(url, timeout=120)
+    if response.status_code != 200:
+        raise ValueError("Unable to download BodenseeOnline profile from {}".format(url))
+
+    with tempfile.NamedTemporaryFile(mode='wb', suffix=".nc", delete=False) as temp_file:
+        nc_filename = temp_file.name
+        temp_file.write(response.content)
+
+    try:
+        with netCDF4.Dataset(nc_filename) as nc:
+            times = nc.variables["times"]
+            dates = netCDF4.num2date(times[:], units=times.units, calendar=times.calendar,
+                                     only_use_cftime_datetimes=False, only_use_python_datetimes=True)
+            # z is an elevation above mean water level (positive up), depth below surface is water_level - z
+            z = np.array(nc.variables["z"][:])
+            water_level = np.array(nc.variables["water_level"][:])
+            temperature = np.ma.filled(nc.variables["temperature"][:].astype("float64"), np.nan)
+    finally:
+        os.remove(nc_filename)
+
+    # Layers above the water surface are flagged with -999, the file defines no _FillValue
+    temperature[temperature <= -900] = np.nan
+
+    data = {"time": [], "temperature": []}
+    for i in range(len(dates)):
+        valid = np.where(~np.isnan(temperature[i]))[0]
+        if len(valid) == 0:
+            continue
+        layer = valid[np.argmin(np.abs(z[valid] - (water_level[i] - depth)))]
+        data["time"].append(int(dates[i].replace(tzinfo=timezone.utc).timestamp()) * 1000)
+        data["temperature"].append(round(float(temperature[i, layer]), 2))
+
+    if len(data["time"]) == 0:
+        raise ValueError("No valid temperature values at {}m in {}".format(depth, url))
+
+    with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
+        temp_filename = temp_file.name
+        json.dump(data, temp_file)
+    s3.upload_file(temp_filename, bucket_key, key)
+    os.remove(temp_filename)
 
 
 def calculate_rmse(dataset1, dataset2):
