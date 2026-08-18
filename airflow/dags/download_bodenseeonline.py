@@ -33,7 +33,7 @@ dag = DAG(
     'download_bodenseeonline',
     default_args=default_args,
     description='Cache surface water temperature from BodenseeOnline.',
-    schedule="0 0 * * *",
+    schedule="0 5 * * *",
     catchup=False,
     tags=['api', 'operational'],
 )
