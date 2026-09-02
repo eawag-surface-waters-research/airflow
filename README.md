@@ -196,7 +196,7 @@ The `nohup ... &` syntax allows you close the terminal and keep the job running.
 
 [mit-by]: https://opensource.org/licenses/MIT
 [mit-by-shield]: https://img.shields.io/badge/License-MIT-g.svg
-[python-by-shield]: https://img.shields.io/badge/Python-3.9-g
+[python-by-shield]: https://img.shields.io/badge/Python-3.12-g
 [airflow]: https://img.shields.io/badge/Apache%20Airflow-017CEE?style=for-the-badge&logo=Apache%20Airflow&logoColor=white
 
 
