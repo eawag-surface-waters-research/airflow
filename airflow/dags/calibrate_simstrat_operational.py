@@ -54,7 +54,7 @@ run_calibration = BashOperator(
     task_id='run_calibration',
     bash_command="mkdir -p {{ filesystem }}/git/calibrate;"
                  "cd {{ filesystem }}/git/calibrate;"
-                 "git config --global --add safe.directory '*';"
+                 "git config --global --replace-all safe.directory '*';"
                  "git clone --recurse-submodules {{ simulation_repo_https }} && cd {{ simulation_repo_name }} || cd {{ simulation_repo_name }} && git stash && git pull;"
                  "git config submodule.recurse true;"
                  "python src/calibrator.py {{ dag_run.conf.argument_file }} docker_dir={{ FILESYSTEM }}/git/calibrate/{{ simulation_repo_name }};",

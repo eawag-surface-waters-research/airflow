@@ -78,7 +78,7 @@ with dag:
         task_id='clone_repo',
         bash_command="mkdir -p {{ git_repos }}; cd {{ git_repos }}; "
                      "git clone --depth 1 {{ git_remote }} || "
-                     "(cd {{ git_name }} ; git config --global --add safe.directory '*' ; git stash ; git pull)",
+                     "(cd {{ git_name }} ; git config --global --replace-all safe.directory '*' ; git stash ; git pull)",
         on_failure_callback=report_failure,
         dag=dag,
     )

@@ -58,7 +58,7 @@ def create_dag(dag_id, prefix, run_date, tiles, schedule_interval, download_pool
             task_id='clone_repo',
             bash_command="mkdir -p {{ DIAS }}; mkdir -p {{ git_repos }}; cd {{ git_repos }}; "
                          "git clone --depth 1 {{ git_remote }} || "
-                         "(cd {{ git_name }} ; git config --global --add safe.directory '*' ; git stash ; git pull)",
+                         "(cd {{ git_name }} ; git config --global --replace-all safe.directory '*' ; git stash ; git pull)",
             on_failure_callback=report_failure,
             dag=dag,
         )

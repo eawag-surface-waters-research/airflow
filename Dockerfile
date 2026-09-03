@@ -11,4 +11,6 @@ RUN apt-get -y update && apt-get -y install git sshpass ca-certificates curl \
        | tee /etc/apt/sources.list.d/docker.list > /dev/null \
     && apt-get update \
     && apt-get -y install docker-ce-cli
+# Edited git config to use HTTP/1.1 for system-wide configuration to avoid issues with GitHub's protocol-v2 fetch over HTTP/2.
+RUN git config --system http.version HTTP/1.1
 USER airflow
