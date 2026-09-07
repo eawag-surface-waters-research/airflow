@@ -24,6 +24,10 @@ MISSION_START = "2023-07-01T00:00:00Z"
 # arrive late are picked up rather than missed forever.
 OVERLAP_DAYS = 2
 
+# A lake is only published once it holds more than this many fully trusted ("used") passes.
+# Suspect passes are still written into the file, they just do not count towards the threshold.
+MIN_USED_PASSES = 10
+
 
 def hydrocron_lake_series(lake_id, start, end):
     """SWOT water surface elevation passes for one prior lake, as a list of dicts."""
@@ -172,8 +176,11 @@ def cache_swot_data(ds, **kwargs):
             merged = {row["time"]: row for row in existing}
             merged.update({row["time"]: row for row in passes})
             data = [merged[time] for time in sorted(merged)]
-            if len(data) == 0:
+            used = len([row for row in data if row.get("qa") == "used"])
+            if used <= MIN_USED_PASSES:
                 skipped = skipped + 1
+                print("{}: {} used passes of {}, below the {} needed to publish"
+                      .format(key, used, len(data), MIN_USED_PASSES))
                 continue
 
             output = {"key": key,
@@ -194,7 +201,8 @@ def cache_swot_data(ds, **kwargs):
             os.remove(temp_filename)
 
             written = written + 1
-            print("{}: {} passes ({} new)".format(key, len(data), len(data) - len(existing)))
+            print("{}: {} passes, {} used ({} new)"
+                  .format(key, len(data), used, len(data) - len(existing)))
         except Exception as error:
             # One unavailable lake must not abandon the remaining few hundred.
             failed = failed + 1

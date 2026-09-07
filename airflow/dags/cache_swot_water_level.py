@@ -33,7 +33,7 @@ dag = DAG(
     'cache_swot_water_level',
     default_args=default_args,
     description='Cache SWOT satellite water levels for each lake.',
-    schedule="0 1 * * *",
+    schedule="0 1 * * 0",
     catchup=False,
     tags=['api', 'operational'],
 )
