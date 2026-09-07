@@ -101,9 +101,10 @@ def classify_quality(row):
 def cache_swot_data(ds, **kwargs):
     """Update the per-lake SWOT water level files in S3.
 
-    Reads the lake list and the SWOT prior lake cache from the website metadata, then for each
-    lake appends any passes newer than what is already stored. Values stay in their native
-    EGM2008 datum; the cached per-country separations let the website convert at display time:
+    Reads the lake list from the website metadata and the SWOT prior lake cache from
+    <prefix>/metadata.json, then for each lake appends any passes newer than what is already
+    stored. Values stay in their native EGM2008 datum; the cached per-country separations let
+    the website convert at display time:
 
         H_national = wse + geoid_hght - separation_m
     """
@@ -134,12 +135,11 @@ def cache_swot_data(ds, **kwargs):
                          .format(bucket, branch))
     lakes = response.json()
 
-    response = requests.get("{}/static/website/metadata/{}/swot.json".format(bucket, branch),
-                            timeout=60)
+    response = requests.get("{}/{}/metadata.json".format(bucket, prefix), timeout=60)
     if response.status_code != 200:
-        raise ValueError("Unable to access {}/static/website/metadata/{}/swot.json. It is "
-                         "produced by create_metadata.py in the alplakes-react repository."
-                         .format(bucket, branch))
+        raise ValueError("Unable to access {}/{}/metadata.json. It is produced by "
+                         "create_swot_cache.py in the alplakes-react repository."
+                         .format(bucket, prefix))
     swot_lakes = response.json()
 
     end = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
