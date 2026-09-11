@@ -335,5 +335,18 @@
           "credential_id": "unil",
           "credential_keys": ["ftp", "user", "password"],
           "email": ["james.runnalls@eawag.ch"]
+      },
+      {
+          "id": "supsi_lower_lugano",
+          "docker_id": "supsi_lower_lugano",
+          "repo_https": "https://gitlab.eawag.ch/surf/data-pipelines/lugano-thermister-chain.git",
+          "repo_name": "lugano-thermister-chain",
+          "datalakes": [
+              {"id":  1443, "failure_notification": 2}
+          ],
+          "schedule_interval": "10 * * * *",
+          "credential_id": "supsi_lower_lugano",
+          "credential_keys": ["ftp", "user", "password"],
+          "email": ["james.runnalls@eawag.ch"]
       }
 ]
