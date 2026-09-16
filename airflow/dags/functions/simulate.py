@@ -88,6 +88,24 @@ def interpolate(original_times, new_times, original_data):
     return interpolated_data
 
 
+def upload_text_and_gzip(s3, bucket_key, key, text):
+    # Upload text as both {key}.txt.gz (read by the website) and {key}.txt
+    try:
+        with tempfile.NamedTemporaryFile(mode='wb', delete=False) as temp_file:
+            temp_filename = temp_file.name
+            with gzip.GzipFile(fileobj=temp_file, mode='wb') as gz_file:
+                gz_file.write(text.encode('utf-8'))
+        s3.upload_file(temp_filename, bucket_key, "{}.txt.gz".format(key))
+        os.remove(temp_filename)
+    except Exception as e:
+        print(e)
+    with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
+        temp_filename = temp_file.name
+        temp_file.write(text)
+    s3.upload_file(temp_filename, bucket_key, "{}.txt".format(key))
+    os.remove(temp_filename)
+
+
 def cache_simulation_data(ds, **kwargs):
     lake = kwargs["lake"]
     model = kwargs["model"]
@@ -147,20 +165,7 @@ def cache_simulation_data(ds, **kwargs):
         response = requests.get(
             "{}/simulations/layer_alplakes/{}/{}/{}/{}/{}/{}".format(api, model, lake, parameter, start, end, depth))
         if response.status_code == 200:
-            temperature = response.text
-            try:
-                with tempfile.NamedTemporaryFile(mode='wb', delete=False) as temp_file:
-                    temp_filename = temp_file.name
-                    with gzip.GzipFile(fileobj=temp_file, mode='wb') as gz_file:
-                        gz_file.write(temperature.encode('utf-8'))
-                s3.upload_file(temp_filename, bucket_key, "simulations/{}/cache/{}/{}.txt.gz".format(model, lake, parameter))
-            except Exception as e:
-                print(e)
-            with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
-                temp_filename = temp_file.name
-                temp_file.write(temperature)
-            s3.upload_file(temp_filename, bucket_key, "simulations/{}/cache/{}/{}.txt".format(model, lake, parameter))
-            os.remove(temp_filename)
+            upload_text_and_gzip(s3, bucket_key, "simulations/{}/cache/{}/{}".format(model, lake, parameter), response.text)
         else:
             print("Failed to cache {}".format(parameter))
             print(response.text)
@@ -201,6 +206,49 @@ def cache_simulation_data(ds, **kwargs):
             json.dump(forecast, temp_file)
         s3.upload_file(temp_filename, bucket_key, "simulations/forecast.json".format(model, lake))
         os.remove(temp_filename)
+
+
+def cache_2d_simulation_data(ds, **kwargs):
+    lake = kwargs["lake"]
+    model = kwargs["model"]
+    api = kwargs["api"]
+    bucket = kwargs["bucket"]
+    aws_access_key_id = kwargs["AWS_ID"]
+    aws_secret_access_key = kwargs["AWS_KEY"]
+    bucket_key = bucket.split(".")[0].split("//")[1]
+
+    s3 = boto3.client("s3",
+                      aws_access_key_id=aws_access_key_id,
+                      aws_secret_access_key=aws_secret_access_key)
+
+    # Collect model metadata
+    response = requests.get("{}/simulations/2d/metadata/{}/{}".format(api, model, lake))
+    if response.status_code != 200:
+        raise ValueError("Unable to access {}/simulations/2d/metadata/{}/{}".format(api, model, lake))
+    lake_metadata = response.json()
+
+    # Cache lake page files (same window the website requests on load: last 5 days up to end_date 00:00 - 1h)
+    end_date = datetime.strptime(lake_metadata["end_date"], '%Y-%m-%d').replace(tzinfo=timezone.utc) - timedelta(hours=1)
+    start_date = end_date - timedelta(days=5)
+    start = start_date.strftime("%Y%m%d%H%M")
+    end = end_date.strftime("%Y%m%d%H%M")
+
+    for parameter in ["geometry", "significant_wave_height", "mean_wave_period", "wave_direction"]:
+        response = requests.get(
+            "{}/simulations/2d/layer_alplakes/{}/{}/{}/{}/{}".format(api, model, lake, parameter, start, end))
+        if response.status_code == 200:
+            upload_text_and_gzip(s3, bucket_key, "simulations/{}/cache/{}/{}".format(model, lake, parameter), response.text)
+        else:
+            print("Failed to cache {}".format(parameter))
+            print(response.text)
+
+    # Cache metadata
+    with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
+        temp_filename = temp_file.name
+        json.dump(lake_metadata, temp_file)
+    s3.upload_file(temp_filename, bucket_key, "simulations/{}/cache/{}/metadata.json".format(model, lake))
+    os.remove(temp_filename)
+
 
 def process_event_notifications(ds, **kwargs):
     bucket = kwargs["bucket"]

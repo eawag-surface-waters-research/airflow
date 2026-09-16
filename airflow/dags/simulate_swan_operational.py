@@ -5,7 +5,8 @@ from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
 from airflow.models import Variable
 from functions.email import report_failure
-from functions.simulate import (get_last_sunday, get_end_date, get_today, format_simulation_directory, upload_restart)
+from functions.simulate import (get_last_sunday, get_end_date, get_today, format_simulation_directory, upload_restart,
+                                cache_2d_simulation_data)
 
 from airflow import DAG
 
@@ -136,7 +137,20 @@ def create_dag(dag_id, parameters):
         dag=dag,
     )
 
-    prepare_simulation_files >> pull_docker >> run_simulation >> postprocess_simulation_output >> upload_restart_files >> send_results >> remove_results
+    cache_data = PythonOperator(
+        task_id='cache_data',
+        python_callable=cache_2d_simulation_data,
+        op_kwargs={"lake": parameters["simulation_id"],
+                   "model": "swan",
+                   "bucket": "https://alplakes-eawag.s3.eu-central-1.amazonaws.com",
+                   "api": "https://alplakes-internal-api.eawag.ch",
+                   'AWS_ID': Variable.get("AWS_ACCESS_KEY_ID"),
+                   'AWS_KEY': Variable.get("AWS_SECRET_ACCESS_KEY")},
+        on_failure_callback=report_failure,
+        dag=dag,
+    )
+
+    prepare_simulation_files >> pull_docker >> run_simulation >> postprocess_simulation_output >> upload_restart_files >> send_results >> remove_results >> cache_data
     return dag
 
 
