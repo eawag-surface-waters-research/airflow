@@ -94,7 +94,7 @@ with dag:
     metadata_products = [{"product": "sentinel2",
                           "remote_tiff": "s3://eawagrs/datalakes/alplakes"},
                          {"product": "sentinel3",
-                          "remote_tiff": "s3://eawagrs/datalakes/sui"},
+                          "remote_tiff": "s3://eawagrs/production/sentinel3"},
                          {"product": "collection",
                           "remote_tiff": "s3://eawagrs/datalakes/collection/alplakes"}]
 
