@@ -142,7 +142,7 @@
                 margin-bottom: 15px;
               "
             >
-              The following exception in the operator <b>{{ task_id }}</b> caused the DAG <b>{{ dag_id }}</b> to fail at <b>{{ start_date }}</b>.
+              The operator <b>{{ task_id }}</b> caused the DAG <b>{{ dag_id }}</b> to fail. Attempt <b>{{ try_number }}</b> of run <b>{{ run_id }}</b>, started at <b>{{ start_date }}</b>.
             </div>
               <div
               style="
@@ -152,8 +152,40 @@
                 margin-bottom: 15px;
               "
             >
-              {{ formatted_exception }}
+              {{ error_summary | e }}
             </div>
+            {% if task_output %}
+            <h4 style="font-weight: 700; font-size: 14px; margin: 0 0 5px">Task output (last lines)</h4>
+            <pre
+              style="
+                white-space: pre-wrap;
+                word-break: break-word;
+                font-family: Menlo, Consolas, monospace;
+                font-size: 12px;
+                line-height: 16px;
+                background-color: #f7f8f9;
+                border-radius: 3px;
+                margin: 0 0 15px;
+                padding: 10px;
+              "
+            >{{ task_output | e }}</pre>
+            {% endif %}
+            {% if error_traceback %}
+            <h4 style="font-weight: 700; font-size: 14px; margin: 0 0 5px">Traceback</h4>
+            <pre
+              style="
+                white-space: pre-wrap;
+                word-break: break-word;
+                font-family: Menlo, Consolas, monospace;
+                font-size: 12px;
+                line-height: 16px;
+                background-color: #f7f8f9;
+                border-radius: 3px;
+                margin: 0 0 15px;
+                padding: 10px;
+              "
+            >{{ error_traceback | e }}</pre>
+            {% endif %}
 
           <p
             class="x_via"
