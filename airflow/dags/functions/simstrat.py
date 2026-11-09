@@ -63,7 +63,7 @@ def cache_simstrat_operational_data(ds, **kwargs):
                       aws_secret_access_key=aws_secret_access_key)
 
     parameters = [
-        {"simstrat_key": "T", "alplakes_key": "temperature", "depth": 0}
+        {"simstrat_key": "T", "alplakes_key": "temperature", "depth": 0, "percentiles": ["p10", "p90"]}
     ]
 
     rename = {
@@ -105,11 +105,19 @@ def cache_simstrat_operational_data(ds, **kwargs):
             url = "{}/simulations/1d/point/simstrat/{}/{}/{}/{}?variables={}".format(
                 api, lake["name"], start.strftime("%Y%m%d%H%M"), end.strftime("%Y%m%d%H%M"),
                 lake["depth"][parameter["depth"]], parameter["simstrat_key"])
-            response = requests.get(url)
+            percentiles = parameter.get("percentiles", [])
+            response = requests.get(url + "".join(["&variables={}_{}".format(parameter["simstrat_key"], p) for p in percentiles]))
+            if response.status_code != 200:
+                percentiles = []
+                response = requests.get(url)
             if response.status_code == 200:
                 if "time" not in data:
                     data["time"] = [iso_to_unix(t) for t in response.json()["time"]]
                 data[parameter["alplakes_key"]] = response.json()["variables"][parameter["simstrat_key"]]["data"]
+                for p in percentiles:
+                    values = response.json()["variables"]["{}_{}".format(parameter["simstrat_key"], p)]["data"]
+                    if any(v is not None for v in values):
+                        data["{}_{}".format(parameter["alplakes_key"], p)] = values
             else:
                 failed = failed + 1
                 print("Error: {}".format(url))
@@ -200,9 +208,15 @@ def cache_simstrat_operational_data(ds, **kwargs):
             url = "{}/simulations/1d/point/simstrat/{}/{}/{}/{}?variables={}".format(api, lake["name"],
                                                                          start.strftime("%Y%m%d%H%M"),
                                                                          end.strftime("%Y%m%d%H%M"), depth, parameter)
-            response = requests.get(url)
+            response = requests.get(url + "&variables={}_p10&variables={}_p90".format(parameter, parameter))
+            if response.status_code != 200:
+                response = requests.get(url)
             if response.status_code == 200:
                 data = response.json()
+                for p in ["p10", "p90"]:
+                    key = "{}_{}".format(parameter, p)
+                    if key in data["variables"] and all(v is None for v in data["variables"][key]["data"]):
+                        del data["variables"][key]
                 with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
                     temp_filename = temp_file.name
                     json.dump(data, temp_file)
