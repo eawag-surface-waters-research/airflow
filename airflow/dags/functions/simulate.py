@@ -227,6 +227,22 @@ def cache_2d_simulation_data(ds, **kwargs):
         raise ValueError("Unable to access {}/simulations/2d/metadata/{}/{}".format(api, model, lake))
     lake_metadata = response.json()
 
+    branch = "master"
+    try:
+        response = requests.get(
+            "https://raw.githubusercontent.com/eawag-surface-waters-research/alplakes-react/refs/heads/master/src/config.json")
+        if response.status_code == 200:
+            branch = response.json()["branch"]
+    except:
+        print("Failed to find branch")
+    try:
+        result = cache_performance(model, lake, s3, bucket=bucket, branch=branch, api=api,
+                                   parameter="significant_wave_height")
+        if result:
+            lake_metadata["rmse"] = result
+    except Exception as e:
+        print(e)
+
     # Cache lake page files (same window the website requests on load: last 5 days up to end_date 00:00 - 1h)
     end_date = datetime.strptime(lake_metadata["end_date"], '%Y-%m-%d').replace(tzinfo=timezone.utc) - timedelta(hours=1)
     start_date = end_date - timedelta(days=5)

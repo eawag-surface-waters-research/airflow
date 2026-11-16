@@ -141,10 +141,75 @@ def download_1d_model_data(api, model_type, model_id, depth, start, stop):
     return {"time": data["time"], "values": data["variables"]["T"]["data"]}
 
 
+def download_datalakes_wave_data(datalakes_id, start, stop, parameter="significant_wave_height"):
+    wave_variables = {
+        "significant_wave_height": ("hs", "hs_qual", (0, 5)),
+    }
+    variable, qual_variable, (lo, hi) = wave_variables[parameter]
+    response = requests.get("https://api.datalakes-eawag.ch/datasetparameters?datasets_id={}".format(datalakes_id))
+    if response.status_code != 200:
+        raise ValueError("Failed to get datalakes parameters")
+    parameters = response.json()
+    axis = {p["parseparameter"]: p["axis"] for p in parameters}
+    time_axis = [p for p in parameters if p.get("parameters_id") == 1][0]["axis"]
+    if variable not in axis:
+        raise ValueError("Variable {} not found in datalakes dataset {}".format(variable, datalakes_id))
+    value_axis = axis[variable]
+    qual_axis = axis.get(qual_variable)
+
+    response = requests.get("https://api.datalakes-eawag.ch/files?datasets_id={}".format(datalakes_id))
+    if response.status_code != 200:
+        raise ValueError("Failed to get datalakes files")
+    files = [f for f in response.json() if f["filetype"] == "json"]
+    files = [f for f in files
+             if datetime.strptime(f["maxdatetime"], "%Y-%m-%dT%H:%M:%S.%fZ") >= start
+             and datetime.strptime(f["mindatetime"], "%Y-%m-%dT%H:%M:%S.%fZ") <= stop]
+
+    time = []
+    values = []
+    for f in files:
+        response = requests.get("https://api.datalakes-eawag.ch/files/{}?get=raw".format(f["id"]))
+        if response.status_code != 200:
+            raise ValueError("Failed to get datalakes files")
+        data = response.json()
+        v = np.array(data[value_axis], dtype=float)
+        if qual_axis is not None and qual_axis in data:
+            v = np.where(np.array(data[qual_axis], dtype=float) == 0, v, np.nan)
+        v = np.where((v >= lo) & (v <= hi), v, np.nan)
+        time = time + [datetime.fromtimestamp(t, tz=timezone.utc).replace(tzinfo=None) for t in data[time_axis]]
+        values = values + v.tolist()
+
+    df = pd.DataFrame({'time': time, 'value': values})
+    df = df.dropna().drop_duplicates(subset="time")
+    df['time'] = pd.to_datetime(df['time'])
+    df = df.sort_values(by='time')
+    df = df[(df['time'] >= start) & (df['time'] <= stop)]
+    if len(df) < 10:
+        raise ValueError("Not enough data to compare")
+    return {"time": df['time'].dt.strftime('%Y-%m-%dT%H:%M:%S+00:00').tolist(), "values": df['value'].tolist()}
+
+
+def download_2d_model_data(api, model_type, model_id, lat, lng, start, stop, parameter):
+    response = requests.get(
+        "{}/simulations/2d/point/{}/{}/{}/{}/{}/{}?variables={}"
+        .format(api, model_type, model_id, start.strftime("%Y%m%d2300"), stop.strftime("%Y%m%d2300"),
+                lat, lng, parameter))
+    if response.status_code != 200:
+        raise ValueError("Failed to get model values")
+    data = response.json()
+    return {"time": data["time"], "values": data["variables"][parameter]["data"]}
+
+
 def cache_performance(model_type, model_id, s3, bucket="https://alplakes-eawag.s3.eu-central-1.amazonaws.com",
-                      branch="master", api="https://alplakes-internal-api.eawag.ch"):
+                      branch="master", api="https://alplakes-internal-api.eawag.ch", parameter="temperature"):
     response = requests.get("{}/static/website/metadata/{}/performance.json".format(bucket, branch))
     p = response.json()
+    performance_parameters = {
+        "temperature": {"file": "performance/{}.json", "round": (2, 1), "min_days": 5},
+        "significant_wave_height": {"file": "performance/significant_wave_height/{}.json", "round": (3, 2),
+                                    "min_days": 3},
+    }
+    settings = performance_parameters[parameter]
     bucket_key = bucket.split(".")[0].split("//")[1]
     stop = datetime.now() - timedelta(days=1)
     stop = stop.replace(hour=23, minute=0, second=0, microsecond=0)
@@ -153,7 +218,8 @@ def cache_performance(model_type, model_id, s3, bucket="https://alplakes-eawag.s
     for lake, lake_sensors in p.items():
         matching_sensors = [
             sensor for sensor in lake_sensors
-            if any(model["type"] == model_type and model["id"] == model_id for model in sensor["models"])
+            if sensor.get("parameter", "temperature") == parameter
+            and any(model["type"] == model_type and model["id"] == model_id for model in sensor["models"])
         ]
         if matching_sensors:
             break
@@ -166,7 +232,9 @@ def cache_performance(model_type, model_id, s3, bucket="https://alplakes-eawag.s
     for sensor in matching_sensors:
         for depth in sensor["depth"]:
             try:
-                if sensor["type"] == "datalakes":
+                if sensor["type"] == "datalakes" and parameter == "significant_wave_height":
+                    depth["data"] = download_datalakes_wave_data(sensor["id"], start, stop, parameter=parameter)
+                elif sensor["type"] == "datalakes":
                     depth["data"] = download_datalakes_data(sensor["id"], depth["depth"], start, stop)
                 elif sensor["type"] == "lake-scrape":
                     depth["data"] = download_insitu_data(sensor["id"], start, stop)
@@ -174,8 +242,8 @@ def cache_performance(model_type, model_id, s3, bucket="https://alplakes-eawag.s
                     raise ValueError("Unrecognised data source")
                 days = (datetime.fromisoformat(depth["data"]["time"][-1]) - datetime.fromisoformat(
                     depth["data"]["time"][0])).days
-                if days < 5:
-                    print("Insitu data doesnt cover a period of at least 5 days")
+                if days < settings["min_days"]:
+                    print("Insitu data doesnt cover a period of at least {} days".format(settings["min_days"]))
                     depth["data"] = False
                     continue
                 for model in sensor["models"]:
@@ -188,6 +256,11 @@ def cache_performance(model_type, model_id, s3, bucket="https://alplakes-eawag.s
                                                                                           model["id"], depth["depth"],
                                                                                           sensor["lat"], sensor["lng"],
                                                                                           start, stop)
+                        elif model["type"] in ["swan"]:
+                            model["data"][depth["name"]]["data"] = download_2d_model_data(api, model["type"],
+                                                                                          model["id"], sensor["lat"],
+                                                                                          sensor["lng"], start, stop,
+                                                                                          parameter)
                         elif model["type"] in ["simstrat"]:
                             model["data"][depth["name"]]["data"] = download_1d_model_data(api, model["type"],
                                                                                           model["id"], depth["depth"],
@@ -200,7 +273,7 @@ def cache_performance(model_type, model_id, s3, bucket="https://alplakes-eawag.s
                         print(e)
                     rmse = calculate_rmse(model["data"][depth["name"]]["data"], depth["data"])
                     if isinstance(rmse, float) and not math.isnan(rmse):
-                        model["data"][depth["name"]]["rmse"] = round(rmse, 2)
+                        model["data"][depth["name"]]["rmse"] = round(rmse, settings["round"][0])
                         if model["type"] == model_type and model["id"] == model_id:
                             rmse_total.append(rmse)
             except Exception as e:
@@ -210,8 +283,8 @@ def cache_performance(model_type, model_id, s3, bucket="https://alplakes-eawag.s
         with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
             temp_filename = temp_file.name
             json.dump(matching_sensors, temp_file)
-        s3.upload_file(temp_filename, bucket_key, "performance/{}.json".format(lake))
-        return round(sum(rmse_total) / len(rmse_total), 1)
+        s3.upload_file(temp_filename, bucket_key, settings["file"].format(lake))
+        return round(sum(rmse_total) / len(rmse_total), settings["round"][1])
     else:
         return False
 
