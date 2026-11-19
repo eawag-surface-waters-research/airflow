@@ -34,10 +34,18 @@ def verify_data_updates(**kwargs):
         data = response.json()
         last_update = datetime.strptime(data["maxdatetime"], '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=timezone.utc)
         current_datetime = datetime.now(timezone.utc)
+        max_age_hours = dataset.get("failure_notification")
         if last_update > current_datetime:
             errors.append({"dataset": dataset["id"], "message": "Datetime greater than current datetime"})
-        elif (current_datetime - last_update).total_seconds() > dataset["failure_notification"] * 3600:
-            errors.append({"dataset": dataset["id"], "message": "Dataset out of date"})
+        elif max_age_hours and (current_datetime - last_update).total_seconds() > max_age_hours * 3600:
+            age_hours = (current_datetime - last_update).total_seconds() / 3600
+            if age_hours >= 48:
+                age = "{:.1f} days".format(age_hours / 24)
+            else:
+                age = "{:.1f} hours".format(age_hours)
+            errors.append({"dataset": dataset["id"],
+                           "message": "Dataset out of date by {} (last update {} UTC, threshold {} hours)".format(
+                               age, last_update.strftime('%Y-%m-%d %H:%M'), max_age_hours)})
     if len(errors) > 0:
         print(errors)
         if os.path.exists(error_file):

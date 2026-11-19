@@ -348,5 +348,28 @@
           "credential_id": "supsi_lower_lugano",
           "credential_keys": ["ftp", "user", "password"],
           "email": ["james.runnalls@eawag.ch"]
+      },
+      {
+          "id": "cantonal_ctd",
+          "docker_id": "cantonal_ctd",
+          "repo_https": "https://gitlab.eawag.ch/surf/data-pipelines/cantonal-ctd.git",
+          "repo_name": "cantonal-ctd",
+          "datalakes": [
+              {"id": 1323},
+              {"id": 1324},
+              {"id": 1325},
+              {"id": 1327},
+              {"id": 1328},
+              {"id": 1329},
+              {"id": 1335},
+              {"id": 1336},
+              {"id": 1337},
+              {"id": 1338},
+              {"id": 1339}
+          ],
+          "schedule_interval": "0 23 * * *",
+          "credential_id": "cantonal_ctd",
+          "credential_keys": ["ftp", "user", "password"],
+          "email": ["james.runnalls@eawag.ch"]
       }
 ]
